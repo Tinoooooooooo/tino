@@ -101,6 +101,83 @@
   .sb-status { padding:8px 6px 12px; font-size:10px; color:var(--muted); text-align:center; line-height:1.3; }
   .sb-status .dot-wa { display:inline-block; width:7px; height:7px; border-radius:50%; margin-right:4px; background:var(--muted); }
   #status-chip.off { color:var(--vermelho); }
+
+  /* ===== PERFIL: card no rodape do menu + menu suspenso + seletor de avatar ===== */
+  .sb-perfil { position:relative; margin-top:auto; border:none; background:none; padding:12px 4px 14px; border-top:1px solid var(--border);
+    display:flex; flex-direction:column; align-items:center; gap:5px; color:var(--muted); font-size:10.5px; cursor:pointer; width:100%; }
+  .sb-perfil .nm { max-width:76px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:600; color:var(--text); transition:color .2s; }
+  .sb-perfil:hover .nm, .sb-perfil.aberto .nm { color:var(--verde); }
+  .pf-anel { position:relative; width:42px; height:42px; border-radius:50%; padding:2px; transition:transform .2s;
+    background:linear-gradient(140deg, var(--verde), #4f8ff0 55%, #9b7cf0); }
+  .sb-perfil:hover .pf-anel { transform:scale(1.05); }
+  .pf-anel .pf-av { border:2px solid var(--surface); }
+  #sb-perfil-av { display:block; }
+  .pf-pres { position:absolute; right:-1px; bottom:-1px; width:12px; height:12px; border-radius:50%; background:var(--muted);
+    border:2.5px solid var(--surface); transition:background .3s; }
+  .pf-pres.on { background:var(--wa); } .pf-pres.off { background:var(--vermelho); }
+  .pf-curva { position:absolute; right:3px; top:24px; color:var(--muted); opacity:.55; transition:all .2s; pointer-events:none; }
+  .sb-perfil:hover .pf-curva { opacity:1; color:var(--text); }
+  .sb-perfil.aberto .pf-curva { opacity:1; color:var(--verde); transform:scale(1.12); }
+  .pf-av { position:relative; overflow:hidden; display:grid; place-items:center; flex:none; border-radius:50%; color:#fff;
+    font-family:var(--f-display); font-weight:700; }
+  .pf-av svg, .pf-av img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+  .pf-menu { position:fixed; z-index:2000; width:276px; padding:8px; border-radius:18px; border:1px solid var(--border);
+    background:color-mix(in srgb, var(--surface) 94%, transparent); backdrop-filter:blur(10px);
+    box-shadow:0 22px 50px -12px rgba(0,0,0,.45); transform-origin:bottom left; animation:pfIn .2s cubic-bezier(.2,.8,.2,1); }
+  @keyframes pfIn { from { opacity:0; transform:translateX(-6px) scale(.95); } }
+  .pf-head { display:flex; align-items:center; gap:11px; padding:10px 10px 12px; }
+  .pf-head .tx { min-width:0; flex:1; }
+  .pf-head b { display:block; font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .pf-head span { display:block; font-size:12px; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .pf-it { width:100%; display:flex; align-items:center; gap:10px; padding:10px 11px; border-radius:12px; border:1px solid transparent;
+    background:none; color:var(--text); font-size:13.5px; font-weight:500; text-align:left; cursor:pointer; transition:all .18s; }
+  .pf-it:hover { background:var(--raise); border-color:var(--border); }
+  .pf-it .ic { color:var(--muted); transition:color .18s; } .pf-it:hover .ic { color:var(--text); }
+  .pf-it .fim { margin-left:auto; display:flex; align-items:center; }
+  .pf-b { font-size:11px; font-weight:600; padding:3px 8px; border-radius:7px; border:1px solid transparent; white-space:nowrap; }
+  .pf-b.verde { color:var(--verde); background:color-mix(in srgb, var(--verde) 13%, transparent); border-color:color-mix(in srgb, var(--verde) 18%, transparent); }
+  .pf-b.vermelho { color:var(--vermelho); background:color-mix(in srgb, var(--vermelho) 13%, transparent); border-color:color-mix(in srgb, var(--vermelho) 18%, transparent); }
+  .pf-b.azul { color:var(--azul); background:color-mix(in srgb, var(--azul) 13%, transparent); border-color:color-mix(in srgb, var(--azul) 18%, transparent); }
+  .pf-b.roxo { color:var(--roxo); background:color-mix(in srgb, var(--roxo) 13%, transparent); border-color:color-mix(in srgb, var(--roxo) 18%, transparent); }
+  .pf-sep { height:1px; margin:8px 6px; background:linear-gradient(90deg, transparent, var(--border), transparent); }
+  .pf-sair { color:var(--vermelho); background:color-mix(in srgb, var(--vermelho) 10%, transparent); }
+  .pf-sair .ic { color:var(--vermelho); }
+  .pf-sair:hover { background:color-mix(in srgb, var(--vermelho) 18%, transparent); border-color:color-mix(in srgb, var(--vermelho) 30%, transparent); }
+  /* Meu perfil: palco do avatar */
+  .pf-card { max-width:440px; width:100%; margin:0 auto; padding:30px 30px 26px; display:grid; gap:26px; }
+  .pf-card h3 { margin:0; text-align:center; font-family:var(--f-display); font-size:20px; }
+  .pf-card .sub { margin:4px 0 0; text-align:center; color:var(--muted); font-size:13px; }
+  .pf-palco-w { display:flex; flex-direction:column; align-items:center; gap:14px; }
+  .pf-palco { position:relative; width:160px; height:160px; }
+  .pf-palco .anel { position:absolute; inset:0; border-radius:50%; pointer-events:none; --rgb:47,191,125;
+    box-shadow:0 0 0 2px rgba(var(--rgb), .6), 0 8px 30px rgba(var(--rgb), .22); transition:box-shadow .45s ease-out; }
+  .pf-palco .pf-av { width:100%; height:100%; font-size:46px; }
+  .pf-palco .pf-av.troca { animation:pfTroca .22s ease-out; }
+  @keyframes pfTroca { from { opacity:0; transform:scale(.97); } }
+  .pf-nome-av { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.12em; font-weight:600; }
+  .pf-thumbs { display:flex; flex-wrap:wrap; justify-content:center; gap:10px; }
+  .pf-th { position:relative; width:52px; height:52px; border-radius:14px; border:1px solid var(--border); background:var(--surface-2);
+    padding:0; cursor:pointer; opacity:.55; transition:opacity .2s, transform .15s, box-shadow .2s; animation:pfTh .3s ease-out backwards; }
+  .pf-th:hover { opacity:1; transform:scale(1.06); } .pf-th:active { transform:scale(.94); }
+  .pf-th .pf-av { width:100%; height:100%; border-radius:13px; }
+  .pf-th.on { opacity:1; box-shadow:0 0 0 2px var(--bg), 0 0 0 4px var(--text); }
+  .pf-th .ok { position:absolute; right:-5px; bottom:-5px; width:19px; height:19px; border-radius:50%; background:var(--text); color:var(--bg);
+    display:grid; place-items:center; }
+  .pf-th.foto-vazia { display:grid; place-items:center; color:var(--muted); border-style:dashed; }
+  @keyframes pfTh { from { opacity:0; transform:translateY(6px); } }
+  .pf-campo label { display:flex; justify-content:space-between; font-size:13px; font-weight:600; margin-bottom:7px; }
+  .pf-campo .cont { font-size:12px; font-weight:500; color:var(--muted); font-variant-numeric:tabular-nums; transition:color .2s; }
+  .pf-campo .cont.quase { color:var(--amarelo); }
+  .pf-inp { position:relative; } .pf-inp input { width:100%; padding-left:36px; height:42px; }
+  .pf-inp .ic { position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--muted); transition:color .2s; }
+  .pf-inp:focus-within .ic { color:var(--text); }
+  .pf-campo .erro { color:var(--vermelho); font-size:12px; margin:6px 0 0 2px; animation:popIn .15s ease-out; }
+  .pf-dados { display:grid; gap:6px; font-size:12.5px; color:var(--muted); }
+  .pf-dados div { display:flex; justify-content:space-between; gap:10px; } .pf-dados b { color:var(--text); font-weight:600; }
+  .pf-salvar { width:100%; height:44px; justify-content:center; }
+  .pf-salvar .ic { transition:transform .2s; } .pf-salvar:hover .ic { transform:translateX(3px); }
+  @media (max-width:760px){ .sb-perfil { margin-top:0; border-top:0; border-left:1px solid var(--border); padding:6px 10px; width:auto; }
+    .sb-perfil .nm, .pf-curva { display:none; } .pf-menu { transform-origin:top right; } }
   #sidebar.recolhido { width:86px; flex-basis:86px; }
   main { padding:20px 24px 40px; flex:1; min-width:0; overflow-y:auto; height:100vh; position:relative; }
   @media (min-width:1900px){ main { padding:24px 36px 40px; } }
@@ -794,8 +871,12 @@
     <button data-aba="testar" onclick="aba('testar')"><span data-ic="teste" data-ic-tam="21"></span><span class="lbl">Testar</span></button>
     <button data-aba="configuracoes" onclick="aba('configuracoes')"><span data-ic="engrenagem" data-ic-tam="21"></span><span class="lbl">Configurações</span></button>
   </nav>
-  <button class="sb-sair" onclick="sair()" title="Sair da conta"><span data-ic="sair" data-ic-tam="19"></span><span class="lbl" id="sair-lbl">Sair</span></button>
-  <div class="sb-status" id="status-chip">…</div>
+  <button class="sb-perfil" id="sb-perfil" onclick="abrirMenuPerfil(event)" title="Sua conta" aria-haspopup="menu">
+    <span class="pf-anel"><span id="sb-perfil-av"></span><span class="pf-pres" id="sb-pres"></span></span>
+    <span class="nm" id="sb-perfil-nome">Conta</span>
+    <svg class="pf-curva" width="10" height="22" viewBox="0 0 12 24" fill="none" aria-hidden="true"><path d="M2 4C6 8 6 16 2 20" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+  </button>
+  <div class="sb-status" id="status-chip" style="display:none"></div>
 </aside>
 <main>
   <!-- ================= DASHBOARD ================= -->
@@ -1120,6 +1201,7 @@ Oi! Aqui é o Matheus. Preciso falar com quem cuida da {nome_clinica}, é você?
       <aside class="cfg-menu">
         <div class="cfg-titulo">Configurações</div>
         <div class="cfg-grupo">Conta</div>
+        <button class="sub-cfg" data-sub="perfil" onclick="subCfg('perfil')"><span class="cfg-mi" style="--c:#2fbf7d"><span data-ic="pessoa" data-ic-tam="16"></span></span>Meu perfil</button>
         <button class="sub-cfg on" data-sub="config" onclick="subCfg('config')"><span class="cfg-mi" style="--c:#8193ae"><span data-ic="sliders" data-ic-tam="16"></span></span>Configurações gerais</button>
         <button class="sub-cfg" data-sub="equipe" onclick="subCfg('equipe')"><span class="cfg-mi" style="--c:#4f8ff0"><span data-ic="usuarios" data-ic-tam="16"></span></span>Usuários</button>
         <button class="sub-cfg" id="sub-assinatura" data-sub="assinatura" style="display:none" onclick="subCfg('assinatura')"><span class="cfg-mi" style="--c:#14a37f"><span data-ic="cartao" data-ic-tam="16"></span></span>Assinatura</button>
@@ -1271,6 +1353,10 @@ Oi! Aqui é o Matheus. Preciso falar com quem cuida da {nome_clinica}, é você?
     <div><button class="btn" onclick="salvarConfig()"><span data-ic="check" data-ic-tam="15"></span>Salvar horários</button></div>
   </div>
 
+  <div id="aba-perfil" style="display:none">
+    <div class="cfg-tit"><span class="cfg-mi" style="--c:#2fbf7d"><span data-ic="pessoa" data-ic-tam="21"></span></span><div><h2>Meu perfil</h2><p>Seu avatar e o nome que aparece no menu e para a equipe.</p></div></div>
+    <div class="card pf-card" id="pf-card"></div>
+  </div>
   <div id="aba-equipe" style="display:none">
     <div class="cfg-tit"><span class="cfg-mi" style="--c:#4f8ff0"><span data-ic="usuarios" data-ic-tam="21"></span></span><div><h2>Usuários</h2><p>Quem trabalha no CRM. Cada pessoa entra com o e-mail e a senha dela e faz só o que o papel permite.</p></div></div>
     <div class="card caixa">
@@ -1475,7 +1561,7 @@ async function logar() {
 
 const ABAS = ["dashboard", "pipeline", "conversas", "campanhas", "reunioes", "testar", "configuracoes"];
 // sub-telas que moram dentro de Configurações
-const SUBS_CFG = ["config", "equipe", "whatsapp", "audios", "agenda", "telegram", "horarios", "cerebro", "manual", "assinatura", "admin"];
+const SUBS_CFG = ["perfil", "config", "equipe", "whatsapp", "audios", "agenda", "telegram", "horarios", "cerebro", "manual", "assinatura", "admin"];
 let abaAtual = "pipeline";
 
 function aba(nome) {
@@ -1530,6 +1616,7 @@ function subCfg(qual) {
     } else el.style.display = "none";
   });
   if (qual === "equipe") renderEquipe();
+  if (qual === "perfil") renderPerfil();
   if (["config", "agenda", "horarios"].includes(qual)) carregarConfig();
   if (qual === "whatsapp") carregarWhats();
   if (qual === "audios") { carregarAudio(); carregarProntosCfg(); }
@@ -1601,6 +1688,8 @@ async function atualizar() {
   const st = estado.instancia.status;
   const chip = $("#status-chip");
   chip.innerHTML = `<span class="dot-wa" style="background:${st === "conectado" ? "var(--wa)" : "var(--vermelho)"}"></span>${st === "conectado" ? "online" : "offline"}<br>${estado.metricas.disparosHoje} hoje`;
+  window.__waStatus = { on: st === "conectado", hoje: estado.metricas.disparosHoje };
+  renderSbPerfil();
   chip.title = "WhatsApp: " + st + (estado.instancia.detalhe ? " (" + estado.instancia.detalhe + ")" : "") + " · " + estado.metricas.disparosHoje + " disparos hoje";
   const dotWa = $("#cfg-wa-dot"); if (dotWa) dotWa.innerHTML = `<span class="dot-wa" style="display:inline-block; width:8px; height:8px; border-radius:50%; background:${st === "conectado" ? "var(--wa)" : "var(--vermelho)"}"></span>`;
   const quentes = leads.filter((l) => l.ia_pausada && !["optout","descartado","perdido","fechado"].includes(l.status)).length;
@@ -1986,6 +2075,7 @@ const cartao = () => ({ ...CARTAO_PADRAO, ...(prefs.cartao || {}) });
 async function carregarPrefs() {
   const p = await api("/api/eu/prefs").catch(() => null);
   if (p && !p.erro) { prefs = { ...prefs, ...p }; localStorage.setItem("prefs_cache", JSON.stringify(prefs)); }
+  if (typeof renderSbPerfil === "function") renderSbPerfil();
 }
 function salvarPrefs(parcial) {
   prefs = { ...prefs, ...parcial };
@@ -2485,10 +2575,178 @@ const PAPEIS = {
   leitor: { rot: "Leitor", cor: "var(--muted)", bg: "var(--surface-2)" },
 };
 
+// ============================================================
+// PERFIL DO USUARIO: avatar (8 desenhos ou foto propria) + nome de exibicao,
+// card no rodape do menu lateral e menu suspenso da conta.
+// Fica em prefs.avatar / prefs.apelido (por usuario, no servidor).
+// ============================================================
+const AVATARES = [
+  { id: 1, nome: "Pôr do sol", rgb: "255,0,91", bg: "#ff005b", fg: "#ffb238", rx: 6, tf: "translate(9 -5) rotate(219 18 18) scale(1)", ft: "translate(4.5 -4) rotate(9 18 18)", cor: "#000", olhos: [10, 24], boca: "M15 19c2 1 4 1 6 0" },
+  { id: 2, nome: "Noite", rgb: "255,125,16", bg: "#ff7d10", fg: "#0a0310", rx: 6, tf: "translate(5 -1) rotate(55 18 18) scale(1.1)", ft: "translate(7 -6) rotate(-5 18 18)", cor: "#fff", olhos: [14, 20], boca: "M15 20c2 1 4 1 6 0" },
+  { id: 3, nome: "Cereja", rgb: "255,0,91", bg: "#0a0310", fg: "#ff005b", rx: 36, tf: "translate(-3 7) rotate(227 18 18) scale(1.2)", ft: "translate(-3 3.5) rotate(7 18 18)", cor: "#fff", olhos: [12, 22], aberta: true },
+  { id: 4, nome: "Menta", rgb: "137,252,179", bg: "#d8fcb3", fg: "#89fcb3", rx: 6, tf: "translate(9 -5) rotate(219 18 18) scale(1)", ft: "translate(4.5 -4) rotate(9 18 18)", cor: "#000", olhos: [10, 24], boca: "M15 19c2 1 4 1 6 0" },
+  { id: 5, nome: "Prospecta", rgb: "47,191,125", bg: "#0b1220", fg: "#2fbf7d", rx: 10, tf: "translate(6 4) rotate(32 18 18) scale(1.05)", ft: "translate(2 -3) rotate(-6 18 18)", cor: "#fff", olhos: [13, 21], boca: "M15 20c2 1.2 4 1.2 6 0" },
+  { id: 6, nome: "Oceano", rgb: "79,143,240", bg: "#4f8ff0", fg: "#22b5c9", rx: 18, tf: "translate(-6 8) rotate(140 18 18) scale(1.1)", ft: "translate(1 -2) rotate(4 18 18)", cor: "#0b1220", olhos: [12, 23], aberta: true },
+  { id: 7, nome: "Violeta", rgb: "155,124,240", bg: "#9b7cf0", fg: "#e3638f", rx: 8, tf: "translate(8 6) rotate(300 18 18) scale(1)", ft: "translate(-2 -4) rotate(-9 18 18)", cor: "#fff", olhos: [11, 22], boca: "M14 19c2.5 1.4 5.5 1.4 8 0" },
+  { id: 8, nome: "Ouro", rgb: "226,178,60", bg: "#ef8a3c", fg: "#e2b23c", rx: 4, tf: "translate(-4 -8) rotate(20 18 18) scale(1.15)", ft: "translate(3 -1) rotate(6 18 18)", cor: "#0b1220", olhos: [12, 22], boca: "M15 20c2 1 4 1 6 0" },
+];
+let _avSeq = 0;
+function svgAvatar(a) {
+  const m = "avm" + (++_avSeq);
+  const boca = a.aberta ? `<path d="M13,21 a1,0.75 0 0,0 10,0" fill="${a.cor}"/>` : `<path d="${a.boca}" fill="none" stroke="${a.cor}" stroke-linecap="round"/>`;
+  return `<svg viewBox="0 0 36 36" fill="none" role="img" aria-label="${a.nome}"><mask id="${m}" maskUnits="userSpaceOnUse" x="0" y="0" width="36" height="36"><rect width="36" height="36" fill="#fff"/></mask>
+    <g mask="url(#${m})"><rect width="36" height="36" fill="${a.bg}"/><rect width="36" height="36" rx="${a.rx}" fill="${a.fg}" transform="${a.tf}"/>
+    <g transform="${a.ft}">${boca}<rect x="${a.olhos[0]}" y="14" width="1.5" height="2" rx="1" fill="${a.cor}"/><rect x="${a.olhos[1]}" y="14" width="1.5" height="2" rx="1" fill="${a.cor}"/></g></g></svg>`;
+}
+let fotoPerfilVer = Date.now();
+const urlFotoUsuario = (id) => `${API}/api/usuario/${Number(id) || 0}/foto?t=${encodeURIComponent(SENHA)}&v=${fotoPerfilVer}`;
+// avatar de qualquer usuario: { id, nome, apelido, avatar }
+function avatarUsuario(u, tam = 36, raio = "50%") {
+  const st = `width:${tam}px; height:${tam}px; border-radius:${raio}; font-size:${Math.round(tam * .36)}px`;
+  const a = AVATARES.find((x) => x.id === Number(u?.avatar));
+  if (u?.avatar === "foto") return `<span class="pf-av" style="${st}; background:var(--raise)"><img src="${urlFotoUsuario(u.id)}" alt="" onerror="this.remove()"></span>`;
+  if (a) return `<span class="pf-av" style="${st}">${svgAvatar(a)}</span>`;
+  const nome = String(u?.apelido || u?.nome || "?");
+  const ini = nome.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase() || "?";
+  return `<span class="pf-av" style="${st}; background:linear-gradient(140deg, #2fbf7d, #4f8ff0)">${esc(ini)}</span>`;
+}
+const euPerfil = () => ({ id: eu?.id || 0, nome: eu?.nome || "Conta", apelido: prefs.apelido || "", avatar: prefs.avatar || null });
+const nomeExibicao = () => prefs.apelido || eu?.nome || "Conta";
+function renderSbPerfil() {
+  const av = $("#sb-perfil-av"); if (!av) return;
+  av.outerHTML = `<span id="sb-perfil-av">${avatarUsuario(euPerfil(), 38)}</span>`;
+  const n = $("#sb-perfil-nome"); if (n) n.textContent = nomeExibicao().split(/\s+/)[0];
+  const wa = window.__waStatus;
+  const pres = $("#sb-pres");
+  if (pres && wa) { pres.className = "pf-pres " + (wa.on ? "on" : "off"); }
+  const btn = $("#sb-perfil");
+  if (btn) btn.title = `${nomeExibicao()}${wa ? " · WhatsApp " + (wa.on ? "online" : "offline") + " · " + wa.hoje + " disparos hoje" : ""}`;
+}
+
+function fecharMenuPerfil() { $("#pf-menu")?.remove(); $("#sb-perfil")?.classList.remove("aberto"); }
+function abrirMenuPerfil(ev) {
+  ev?.stopPropagation();
+  if ($("#pf-menu")) return fecharMenuPerfil();
+  fecharPops?.(); fecharMenuCtx?.();
+  const papel = PAPEIS[eu?.papel] || null;
+  const wa = window.__waStatus;
+  const temAssin = $("#sub-assinatura") && $("#sub-assinatura").style.display !== "none";
+  const escuro = document.documentElement.getAttribute("data-tema") === "dark";
+  const it = (icone, rot, acao, fim = "", cls = "") => `<button class="pf-it ${cls}" role="menuitem" onclick="fecharMenuPerfil(); ${acao}">${ic(icone, 17)}<span>${rot}</span><span class="fim">${fim}</span></button>`;
+  const d = document.createElement("div");
+  d.id = "pf-menu"; d.className = "pf-menu"; d.setAttribute("role", "menu");
+  d.onclick = (e) => e.stopPropagation();
+  d.innerHTML = `
+    <div class="pf-head">${avatarUsuario(euPerfil(), 44)}<div class="tx"><b>${esc(nomeExibicao())}</b><span>${esc(eu?.email || "")}</span></div></div>
+    ${it("pessoa", "Meu perfil", "aba('perfil')", papel ? `<span class="pf-b azul">${esc(papel.rot)}</span>` : "")}
+    ${it("whatsapp", "WhatsApp", "aba('whatsapp')", wa ? `<span class="pf-b ${wa.on ? "verde" : "vermelho"}">${wa.on ? "online" : "offline"} · ${Number(wa.hoje) || 0} hoje</span>` : "")}
+    ${temAssin ? it("cartao", "Assinatura", "aba('assinatura')", `<span class="pf-b roxo" id="pf-assin">...</span>`) : ""}
+    ${it(escuro ? "lua" : "sol", "Tema", "toggleTema(); renderSbPerfil()", `<span class="pf-b azul">${escuro ? "escuro" : "claro"}</span>`)}
+    ${it("engrenagem", "Configurações", "aba('configuracoes')")}
+    ${it("livro", "Manual e ajuda", "aba('manual')")}
+    <div class="pf-sep"></div>
+    ${it("sair", "Sair da conta", "sair()", "", "pf-sair")}`;
+  document.body.appendChild(d);
+  const b = $("#sb-perfil").getBoundingClientRect();
+  if (window.innerWidth <= 760) { d.style.top = (b.bottom + 8) + "px"; d.style.right = "8px"; }
+  else { d.style.left = (b.right + 10) + "px"; d.style.bottom = Math.max(10, window.innerHeight - b.bottom) + "px"; }
+  $("#sb-perfil").classList.add("aberto");
+  if (temAssin) api("/api/assinatura").then((a) => { const el = $("#pf-assin"); if (el && a && !a.erro) { el.textContent = a.pausada ? "pausada" : (a.status || "ativa"); el.className = "pf-b " + (a.pausada ? "vermelho" : "roxo"); } }).catch(() => {});
+}
+document.addEventListener("click", () => fecharMenuPerfil());
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") fecharMenuPerfil(); });
+
+// ---- tela Meu perfil (seletor de avatar) ----
+let pfSel = null, pfApelido = "", pfTemFoto = false;
+async function renderPerfil() {
+  pfSel = prefs.avatar || 5;
+  pfApelido = prefs.apelido || eu?.nome || "";
+  pfTemFoto = await fetch(urlFotoUsuario(eu?.id || 0), { method: "HEAD" }).then((r) => r.ok).catch(() => false);
+  if (pfSel === "foto" && !pfTemFoto) pfSel = 5;
+  desenharPerfil(true);
+}
+function desenharPerfil(entrada) {
+  const card = $("#pf-card"); if (!card) return;
+  const a = AVATARES.find((x) => x.id === pfSel);
+  const rgb = pfSel === "foto" ? "79,143,240" : a?.rgb;
+  const u = { ...euPerfil(), avatar: pfSel, apelido: pfApelido };
+  const n = pfApelido.trim().length;
+  const erro = n > 0 && n < 2;
+  card.innerHTML = `
+    <div><h3>Escolha seu avatar</h3><p class="sub">É assim que a equipe vê você no Prospecta</p></div>
+    <div class="pf-palco-w">
+      <div class="pf-palco"><div class="anel" id="pf-anel" style="--rgb:${rgb}"></div><div id="pf-palco-av">${avatarUsuario(u, 160).replace('class="pf-av"', 'class="pf-av troca"')}</div></div>
+      <span class="pf-nome-av">${pfSel === "foto" ? "Sua foto" : esc(a?.nome || "")}</span>
+      <div class="pf-thumbs">
+        ${AVATARES.map((x, i) => `<button type="button" class="pf-th ${pfSel === x.id ? "on" : ""}" style="${entrada ? `animation-delay:${i * 45}ms` : "animation:none"}" onclick="escolherAvatar(${x.id})" aria-pressed="${pfSel === x.id}" title="${x.nome}">
+          <span class="pf-av" style="width:100%; height:100%; border-radius:13px">${svgAvatar(x)}</span>${pfSel === x.id ? `<span class="ok">${ic("checkq", 12)}</span>` : ""}</button>`).join("")}
+        ${pfTemFoto
+          ? `<button type="button" class="pf-th ${pfSel === "foto" ? "on" : ""}" style="${entrada ? "animation-delay:360ms" : "animation:none"}" onclick="escolherAvatar('foto')" title="Sua foto">
+              <span class="pf-av" style="width:100%; height:100%; border-radius:13px"><img src="${urlFotoUsuario(eu?.id)}" alt=""></span>${pfSel === "foto" ? `<span class="ok">${ic("checkq", 12)}</span>` : ""}</button>`
+          : `<button type="button" class="pf-th foto-vazia" style="${entrada ? "animation-delay:360ms" : "animation:none"}" onclick="$('#pf-arquivo').click()" title="Enviar sua foto">${ic("upload", 18)}</button>`}
+      </div>
+      <input type="file" id="pf-arquivo" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="enviarFotoPerfil(this.files[0])">
+      ${pfTemFoto ? `<div style="display:flex; gap:12px; font-size:12px"><a href="#" onclick="event.preventDefault(); $('#pf-arquivo').click()">Trocar foto</a><a href="#" style="color:var(--vermelho)" onclick="event.preventDefault(); removerFotoPerfil()">Remover foto</a></div>` : ""}
+    </div>
+    <div class="pf-campo">
+      <label for="pf-nome">Nome de exibição <span class="cont ${n >= 21 ? "quase" : ""}" id="pf-cont">${n}/24</span></label>
+      <div class="pf-inp">${ic("pessoa", 16)}<input id="pf-nome" maxlength="24" spellcheck="false" autocomplete="nickname" placeholder="Como quer aparecer" value="${esc(pfApelido)}" oninput="digitouApelido(this.value)"></div>
+      <p class="erro" id="pf-erro" style="${erro ? "" : "display:none"}">Use pelo menos 2 letras</p>
+    </div>
+    <div class="pf-dados">
+      <div><span>E-mail de acesso</span><b>${esc(eu?.email || "-")}</b></div>
+      <div><span>Papel</span><b>${esc(PAPEIS[eu?.papel]?.rot || eu?.papel || "-")}</b></div>
+    </div>
+    <button class="btn pf-salvar" id="pf-salvar" onclick="salvarPerfil()" ${n >= 2 ? "" : "disabled"}>Salvar perfil ${ic("seta", 16)}</button>`;
+}
+function escolherAvatar(id) {
+  if (id === pfSel) return;
+  pfSel = id; desenharPerfil(false);
+}
+function digitouApelido(v) {
+  pfApelido = v;
+  const n = v.trim().length;
+  $("#pf-cont").textContent = `${v.length}/24`; $("#pf-cont").classList.toggle("quase", v.length >= 21);
+  $("#pf-erro").style.display = n > 0 && n < 2 ? "" : "none";
+  $("#pf-salvar").disabled = n < 2;
+}
+// recorta no centro, 256x256 JPEG, antes de mandar
+async function enviarFotoPerfil(arq) {
+  if (!arq) return;
+  if (!/^image\/(jpeg|png|webp)$/.test(arq.type)) return toast("Use uma imagem JPG, PNG ou WebP", "alerta");
+  try {
+    const img = await createImageBitmap(arq);
+    const lado = Math.min(img.width, img.height), cv = document.createElement("canvas");
+    cv.width = cv.height = 256;
+    cv.getContext("2d").drawImage(img, (img.width - lado) / 2, (img.height - lado) / 2, lado, lado, 0, 0, 256, 256);
+    const blob = await new Promise((ok) => cv.toBlob(ok, "image/jpeg", .88));
+    const fd = new FormData(); fd.append("foto", blob, "perfil.jpg");
+    const r = await fetch(API + "/api/eu/foto", { method: "POST", headers: { Authorization: "Bearer " + SENHA }, body: fd }).then((x) => x.json());
+    if (!r.ok) return toast(r.erro || "Não deu pra enviar a foto", "alerta");
+    fotoPerfilVer = Date.now(); pfTemFoto = true; pfSel = "foto";
+    desenharPerfil(false);
+    toast("Foto enviada. Clique em Salvar perfil para usar", "checkq");
+  } catch { toast("Não deu pra ler essa imagem", "alerta"); }
+}
+async function removerFotoPerfil() {
+  await api("/api/eu/foto", { method: "DELETE" }).catch(() => {});
+  fotoPerfilVer = Date.now(); pfTemFoto = false;
+  if (pfSel === "foto") pfSel = 5;
+  if (prefs.avatar === "foto") salvarPrefs({ avatar: pfSel });
+  desenharPerfil(false); renderSbPerfil();
+}
+function salvarPerfil() {
+  const apelido = pfApelido.trim();
+  if (apelido.length < 2) return;
+  salvarPrefs({ avatar: pfSel, apelido: apelido === eu?.nome ? null : apelido });
+  renderSbPerfil();
+  toast("Perfil salvo", "checkq");
+}
+
 async function carregarEu() {
   eu = await api("/api/eu").catch(() => null);
   if (!eu) return;
-  if ($("#sair-lbl")) $("#sair-lbl").textContent = `Sair (${eu.nome})`; // mostra quem está logado
+  renderSbPerfil(); // card da conta no rodape do menu
   // esconde o que o papel não pode fazer
   const nav = $(".sub-cfg[data-sub='equipe']");
   if (nav) nav.style.display = euPode("gerir_usuarios") ? "" : "none";
@@ -2503,7 +2761,7 @@ async function renderEquipe() {
   $("#lista-usuarios").innerHTML = us.map((u) => {
     const p = PAPEIS[u.papel] || PAPEIS.leitor;
     return `<div class="linha-i" style="${u.ativo ? "" : "opacity:.5"}">
-      <span class="av sm" style="background:${p.bg}; color:${p.cor}">${esc((u.nome || "?")[0].toUpperCase())}</span>
+      ${u.avatar ? avatarUsuario(u, 30, "8px") : `<span class="av sm" style="background:${p.bg}; color:${p.cor}">${esc((u.nome || "?")[0].toUpperCase())}</span>`}
       <div class="tx">
         <b>${esc(u.nome)}${u.id === eu?.id ? ' <span style="font-size:11px; color:var(--muted); font-weight:500">(você)</span>' : ""}</b>
         <span>${esc(u.email)}${u.ultimo_acesso ? " · último acesso " + dataHoraSP(u.ultimo_acesso) : " · nunca entrou"}</span>

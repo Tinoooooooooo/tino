@@ -2115,6 +2115,34 @@ app.get("/api/movimentacoes", auth, (req, res) => {
 // ============================================================
 // PREFERENCIAS DE TELA por usuario (ordem dos paineis do lead, layout do cartao)
 // ============================================================
+// FOTO DE PERFIL do usuario (Meu perfil). O painel ja manda recortada 256x256
+// em JPEG; aqui so confere tipo/tamanho e guarda em dados/perfis/u<id>.jpg
+const PERFIS_DIR = join(DADOS_DIR, "perfis");
+mkdirSync(PERFIS_DIR, { recursive: true });
+const fotoPerfilDe = (id) => join(PERFIS_DIR, `u${Number(id) || 0}.jpg`);
+app.post("/api/eu/foto", auth, upload.single("foto"), (req, res) => {
+  if (!req.file) return res.status(400).json({ erro: "a foto não veio" });
+  const tipoOk = /^image\/(jpeg|png|webp)$/.test(req.file.mimetype || "");
+  if (!tipoOk || req.file.size > 2 * 1024 * 1024) {
+    try { unlinkSync(req.file.path); } catch { /* ja foi */ }
+    return res.status(400).json({ erro: "use uma imagem JPG, PNG ou WebP de até 2 MB" });
+  }
+  renameSync(req.file.path, fotoPerfilDe(req.usuario?.id));
+  res.json({ ok: true });
+});
+app.delete("/api/eu/foto", auth, (req, res) => {
+  try { unlinkSync(fotoPerfilDe(req.usuario?.id)); } catch { /* nao tinha */ }
+  res.json({ ok: true });
+});
+app.get("/api/usuario/:id/foto", (req, res) => {
+  if (!tokenQueryValido(req.query.t)) return res.status(401).end();
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id < 0) return res.status(404).end();
+  const caminho = fotoPerfilDe(id);
+  if (!fsExiste(caminho)) return res.status(404).end();
+  res.setHeader("Cache-Control", "private, max-age=60");
+  res.sendFile(caminho);
+});
 app.get("/api/eu/prefs", auth, (req, res) => {
   const u = req.usuario?.id ? db.prepare("SELECT prefs FROM usuarios WHERE id = ?").get(req.usuario.id) : null;
   let p = {}; try { p = JSON.parse(u?.prefs || "{}"); } catch { p = {}; }
@@ -2124,6 +2152,8 @@ app.post("/api/eu/prefs", auth, (req, res) => {
   if (!req.usuario?.id) return res.json({ ok: false, erro: "login sem usuário: preferência fica só neste navegador" });
   const atual = (() => { try { return JSON.parse(db.prepare("SELECT prefs FROM usuarios WHERE id = ?").get(req.usuario.id)?.prefs || "{}"); } catch { return {}; } })();
   const novo = { ...atual, ...(req.body && typeof req.body === "object" ? req.body : {}) };
+  if ("apelido" in novo) novo.apelido = String(novo.apelido || "").trim().slice(0, 24) || null;
+  if ("avatar" in novo && !(novo.avatar === "foto" || (Number.isInteger(novo.avatar) && novo.avatar >= 1 && novo.avatar <= 12))) novo.avatar = null;
   const txt = JSON.stringify(novo);
   if (txt.length > 8000) return res.status(400).json({ erro: "preferências grandes demais" });
   db.prepare("UPDATE usuarios SET prefs = ? WHERE id = ?").run(txt, req.usuario.id);
