@@ -5,7 +5,7 @@
 import express from "express";
 import multer from "multer";
 import { execFile } from "node:child_process";
-import { mkdirSync, renameSync, readFileSync, copyFileSync, unlinkSync, existsSync as fsExiste } from "node:fs";
+import { mkdirSync, renameSync, readFileSync, writeFileSync, copyFileSync, unlinkSync, existsSync as fsExiste } from "node:fs";
 import { dirname, join, extname } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -25,7 +25,7 @@ import {
   moverLead, kanbanDaPipeline,
   telefonesDoLead, addTelefone, removerTelefone, editarTelefone, normalizarTelefone, variantesTelefone,
   threadsDoLead, getThread, threadPorTelefone, abrirThread, instanciaDoLead, fixarChipDoLead,
-  audioDoLead,
+  audioDoLead, registrarMovimento,
 } from "./lib/db.js";
 import {
   parseWebhook, enviarTexto, enviarMidia, mostrarDigitando, pararDigitando, criarInstancia,
@@ -574,7 +574,7 @@ app.post("/api/lead/:id/follow", auth, exige("conversar"), (req, res) => {
   db.prepare("UPDATE leads SET follows_feitos = ?, ultimo_follow_em = datetime('now') WHERE id = ?").run(n, lead.id);
   registrarEvento(lead.id, "ligacao", `${resultado} · follow ${n}${obs ? " · " + obs : ""}`);
   db.prepare("INSERT INTO notas (lead_id, texto, usuario_id) VALUES (?,?,?)")
-    .run(lead.id, `📞 Follow ${n} feito${obs ? ": " + obs : ""}`, req.usuario?.id || null);
+    .run(lead.id, `Follow ${n} feito${obs ? ": " + obs : ""}`, req.usuario?.id || null);
   res.json({ ok: true, follows: n, resultado });
 });
 
@@ -791,6 +791,12 @@ app.get("/api/campanhas", auth, (req, res) => {
     c.hoje = relatorioHojeDaCampanha(c);
     c.aberturas_hoje = c.hoje.aberturas;
     c.sem_whatsapp = db.prepare("SELECT COUNT(*) c FROM leads WHERE status = 'sem_whatsapp'").get().c;
+    // resultado da campanha (lista de anuncios do painel): quem respondeu e quem marcou
+    const doResultado = (tipo) => db.prepare(`SELECT COUNT(DISTINCT e.lead_id) c FROM eventos e
+      JOIN campanha_leads cl ON cl.lead_id = e.lead_id WHERE cl.campanha_id = ? AND e.tipo = ?`).get(c.id, tipo).c;
+    c.respostas = doResultado("resposta");
+    c.reunioes = doResultado("reuniao");
+    c.pipeline_nome = c.pipeline_id ? db.prepare("SELECT nome FROM pipelines WHERE id = ?").get(c.pipeline_id)?.nome || null : null;
   }
   res.json(camps);
 });
@@ -1560,32 +1566,16 @@ app.delete("/api/usuario/:id", auth, exige("gerir_usuarios"), (req, res) => {
 // igual mandar texto pelo painel). Aceita thread paralela.
 app.post("/api/lead/:id/audio", auth, exige("conversar"), upload.single("audio"), async (req, res) => {
   const lead = getLead(req.params.id);
-  if (!lead) return res.status(404).json({ erro: "lead nao existe" });
+  if (!lead) { if (req.file) unlinkSync(req.file.path); return res.status(404).json({ erro: "lead nao existe" }); }
   if (!req.file) return res.status(400).json({ erro: "arquivo nao veio" });
   try {
-    let thread = null;
-    if (req.body?.thread_id) {
-      thread = getThread(Number(req.body.thread_id));
-      if (!thread || thread.lead_id !== lead.id) return res.status(400).json({ erro: "thread não é desse lead" });
-    }
-    const alvo = thread?.telefone || lead.telefone;
-    const instA = instanciaDoLead(lead, thread?.instancia_id || null);
-    const travaA = chipBloqueado(instA, req.usuario);
-    if (travaA) { const { unlinkSync: u2 } = await import("node:fs"); u2(req.file.path); return res.status(403).json({ erro: travaA }); }
-    const b64 = readFileSync(req.file.path).toString("base64");
-    const ext = (extname(req.file.originalname || "") || ".ogg").toLowerCase().replace(".", "");
-    const mime = ext === "mp3" ? "audio/mpeg" : ext === "m4a" ? "audio/mp4" : ext === "webm" ? "audio/webm" : "audio/ogg";
-    const simulado = String(alvo).startsWith("0000");
-    const r = simulado ? { ok: true } : await enviarMidia(instA?.uazapi_token || "", alvo, { tipo: "audio", arquivo: `data:${mime};base64,${b64}` });
-    unlinkSync(req.file.path);
-    if (!r.ok) return res.status(502).json({ erro: r.erro });
-    const ins = salvarMensagem(lead.id, "assistant", "[áudio enviado]", "audio");
-    if (thread) db.prepare("UPDATE mensagens SET thread_id = ? WHERE id = ?").run(thread.id, ins.lastInsertRowid);
-    if (!lead.ia_pausada && !thread) { atualizarLead(lead.id, { ia_pausada: 1 }); registrarEvento(lead.id, "handoff", "painel (áudio)"); }
-    if (thread && !thread.ia_pausada) db.prepare("UPDATE threads SET ia_pausada = 1 WHERE id = ?").run(thread.id);
+    const r = await enviarAudioProLead(req, lead, req.file.path, extDoAudio(req.file), "[áudio enviado]");
+    if (!r.ok) return res.status(r.status).json({ erro: r.erro });
     res.json({ ok: true });
   } catch (e) {
     res.status(500).json({ erro: e.message });
+  } finally {
+    try { unlinkSync(req.file.path); } catch { /* ja removido */ }
   }
 });
 
@@ -1617,7 +1607,7 @@ app.post("/api/lead/:id/audio-oficial", auth, exige("conversar"), async (req, re
     if (!r.ok) return res.status(502).json({ erro: r.erro });
     if (inst && !thread) fixarChipDoLead(lead.id, inst.id);
     atualizarLead(lead.id, { audio_enviado: 1 }); // a IA nao manda de novo
-    const ins = salvarMensagem(lead.id, "assistant", "[🎙️ áudio oficial enviado]", "audio");
+    const ins = salvarMensagem(lead.id, "assistant", "[áudio oficial enviado]", "audio");
     if (thread) db.prepare("UPDATE mensagens SET thread_id = ? WHERE id = ?").run(thread.id, ins.lastInsertRowid);
     registrarEvento(lead.id, "audio", "áudio oficial enviado pelo painel");
     res.json({ ok: true });
@@ -1702,6 +1692,9 @@ app.post("/api/pipeline/:id/etapas/ordem", auth, exige("editar_pipeline"), (req,
 });
 
 app.patch("/api/etapa/:id", auth, exige("editar_pipeline"), (req, res) => {
+  // a cor vai parar num atributo style do painel: so aceita #rrggbb
+  if (req.body?.cor !== undefined && req.body.cor !== null && !/^#[0-9a-f]{6}$/i.test(String(req.body.cor)))
+    return res.status(400).json({ erro: "cor inválida (use #rrggbb)" });
   atualizarEtapa(Number(req.params.id), req.body || {});
   res.json({ ok: true });
 });
@@ -1766,9 +1759,11 @@ app.get("/api/kanban/:pipelineId", auth, (req, res) => {
 app.post("/api/lead/:id/mover", auth, exige("mover_card"), (req, res) => {
   const etapaId = Number(req.body?.etapa_id);
   if (!etapaId) return res.status(400).json({ erro: "falta etapa_id" });
+  const antes = getLead(Number(req.params.id));
   const lead = moverLead(Number(req.params.id), etapaId);
   if (!lead) return res.status(404).json({ erro: "etapa não existe" });
   registrarEvento(Number(req.params.id), "moveu", `${req.usuario.nome} → ${lead.status}`);
+  registrarMovimento(lead.id, antes?.etapa_id, lead.etapa_id, req.usuario, "kanban");
   res.json({ ok: true, lead });
 });
 
@@ -1796,8 +1791,10 @@ app.post("/api/leads/mover", auth, exige("mover_card"), (req, res) => {
   let movidos = 0;
   const tx = db.transaction(() => {
     for (const id of ids) {
+      const antes = getLead(id);
       const lead = moverLead(id, etapaId);
       if (!lead) continue;                       // lead apagado nesse meio tempo
+      registrarMovimento(id, antes?.etapa_id, lead.etapa_id, req.usuario, "em massa");
       registrarEvento(id, "moveu", `${req.usuario.nome} → ${lead.status} (em massa)`);
       movidos++;
     }
@@ -2002,25 +1999,315 @@ app.delete("/api/tarefa/:id", auth, (req, res) => {
 // ============================================================
 // DASHBOARD (funil + metricas + benchmarks Adriano Aquino)
 // ============================================================
+// ============================================================
+// PERIODO DO DASHBOARD: dias civis de SP. O calendario do painel manda
+// ?de=AAAA-MM-DD&ate=AAAA-MM-DD; sem isso vale ?dias=N (ou "hoje").
+// As datas passam por regex antes de entrar no SQL, entao inline e seguro.
+// ============================================================
+const DATA_RE = /^\d{4}-\d{2}-\d{2}$/;
+const somaDias = (iso, n) => { const d = new Date(iso + "T12:00:00Z"); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+function janelaDash(req) {
+  const hoje = agoraSP().data;
+  let de = String(req.query.de || ""), ate = String(req.query.ate || "");
+  if (!DATA_RE.test(de) || !DATA_RE.test(ate)) {
+    const n = req.query.dias === "hoje" ? 1 : Math.min(366, Math.max(1, Number(req.query.dias) || 30));
+    ate = hoje; de = somaDias(hoje, -(n - 1));
+  }
+  if (de > ate) [de, ate] = [ate, de];
+  const dias = Math.round((new Date(ate + "T12:00:00Z") - new Date(de + "T12:00:00Z")) / 864e5) + 1;
+  return { de, ate, dias, cond: (col) => `date(${col}, '-3 hours') BETWEEN '${de}' AND '${ate}'` };
+}
+// soma dos ajustes manuais de uma metrica no periodo. Equipe toda (uid nulo) soma
+// tudo; filtro por pessoa soma so os ajustes feitos no numero dela.
+const METRICAS_AJUSTAVEIS = ["ligacoes", "atendeu", "decisores", "reunioes", "disparos", "respostas"];
+function ajusteMetrica(metrica, J, uid = null) {
+  return db.prepare(`SELECT COALESCE(SUM(delta), 0) s FROM ajustes_metrica
+    WHERE metrica = ? AND dia BETWEEN ? AND ? ${uid ? "AND usuario_id = ?" : ""}`)
+    .get(...[metrica, J.de, J.ate, ...(uid ? [uid] : [])]).s;
+}
+
+// SERIE DO GRAFICO: ligacoes x disparos por dia (ou por hora, se o periodo for 1 dia),
+// ja com os ajustes manuais somados no dia em que foram feitos.
+app.get("/api/dashboard/serie", auth, exige("ver_dashboard"), (req, res) => {
+  const J = janelaDash(req);
+  const uid = req.query.usuario_id ? Number(req.query.usuario_id) : null;
+  const doDono = uid ? ` AND l.id IN (SELECT id FROM leads WHERE usuario_id = ${uid}
+    OR pipeline_id IN (SELECT id FROM pipelines WHERE usuario_id = ${uid}))` : "";
+  const porDia = db.prepare(`SELECT date(e.criado_em, '-3 hours') d,
+      SUM(e.tipo='ligacao') ligacoes, SUM(e.tipo='disparo') disparos
+    FROM eventos e JOIN leads l ON l.id = e.lead_id
+    WHERE e.tipo IN ('ligacao','disparo') AND ${J.cond("e.criado_em")}${doDono} GROUP BY 1`).all();
+  const ajustes = db.prepare(`SELECT dia d, metrica, SUM(delta) s FROM ajustes_metrica
+    WHERE metrica IN ('ligacoes','disparos') AND dia BETWEEN ? AND ? ${uid ? "AND usuario_id = ?" : ""} GROUP BY dia, metrica`)
+    .all(...[J.de, J.ate, ...(uid ? [uid] : [])]);
+  const mapa = new Map(porDia.map((r) => [r.d, { ligacoes: r.ligacoes || 0, disparos: r.disparos || 0 }]));
+  for (const a of ajustes) {
+    const it = mapa.get(a.d) || { ligacoes: 0, disparos: 0 };
+    it[a.metrica] += a.s; mapa.set(a.d, it);
+  }
+  const dias = [];
+  for (let d = J.de; d <= J.ate; d = somaDias(d, 1)) dias.push({ d, ...(mapa.get(d) || { ligacoes: 0, disparos: 0 }) });
+  let horas = null;
+  if (J.dias === 1) {
+    const ph = db.prepare(`SELECT CAST(strftime('%H', e.criado_em, '-3 hours') AS INTEGER) h,
+        SUM(e.tipo='ligacao') ligacoes, SUM(e.tipo='disparo') disparos
+      FROM eventos e JOIN leads l ON l.id = e.lead_id
+      WHERE e.tipo IN ('ligacao','disparo') AND ${J.cond("e.criado_em")}${doDono} GROUP BY 1`).all();
+    horas = Array.from({ length: 24 }, (_, h) => ({ h, ligacoes: 0, disparos: 0 }));
+    for (const r of ph) horas[r.h] = { h: r.h, ligacoes: r.ligacoes || 0, disparos: r.disparos || 0 };
+  }
+  // ultimas ligacoes contadas (o mesmo evento que o card movido / botao de ligacao gera)
+  const ultimas = db.prepare(`SELECT e.lead_id, e.detalhe, e.criado_em, l.nome_clinica
+    FROM eventos e JOIN leads l ON l.id = e.lead_id
+    WHERE e.tipo = 'ligacao' AND ${J.cond("e.criado_em")}${doDono} ORDER BY e.id DESC LIMIT 8`).all();
+  const ajustesNoPeriodo = db.prepare(`SELECT metrica, SUM(delta) s FROM ajustes_metrica
+    WHERE dia BETWEEN ? AND ? ${uid ? "AND usuario_id = ?" : ""} GROUP BY metrica`).all(...[J.de, J.ate, ...(uid ? [uid] : [])]);
+  res.json({ de: J.de, ate: J.ate, dias, horas, ultimas, ajustes: Object.fromEntries(ajustesNoPeriodo.map((a) => [a.metrica, a.s])) });
+});
+
+// AJUSTE MANUAL: soma (ou subtrai) um numero numa metrica, num dia. Quem pode
+// mexer em funil pode corrigir numero; o resto so ve.
+app.post("/api/dashboard/ajuste", auth, exige("editar_pipeline"), (req, res) => {
+  const b = req.body || {};
+  const metrica = String(b.metrica || "");
+  if (!METRICAS_AJUSTAVEIS.includes(metrica)) return res.status(400).json({ erro: "métrica não pode ser ajustada" });
+  const dia = DATA_RE.test(String(b.dia || "")) ? String(b.dia) : agoraSP().data;
+  const delta = Math.trunc(Number(b.delta));
+  if (!delta || Math.abs(delta) > 100000) return res.status(400).json({ erro: "valor do ajuste inválido" });
+  const uid = b.usuario_id ? Number(b.usuario_id) : null;
+  db.prepare("INSERT INTO ajustes_metrica (dia, metrica, usuario_id, delta, autor_id) VALUES (?,?,?,?,?)")
+    .run(dia, metrica, uid, delta, req.usuario?.id || null);
+  res.json({ ok: true });
+});
+app.delete("/api/dashboard/ajuste", auth, exige("editar_pipeline"), (req, res) => {
+  const J = janelaDash(req);
+  const uid = req.query.usuario_id ? Number(req.query.usuario_id) : null;
+  const r = db.prepare(`DELETE FROM ajustes_metrica WHERE dia BETWEEN ? AND ? AND ${uid ? "usuario_id = ?" : "usuario_id IS NULL"}`)
+    .run(...[J.de, J.ate, ...(uid ? [uid] : [])]);
+  res.json({ ok: true, removidos: r.changes });
+});
+
+// ============================================================
+// MOVIMENTACOES DO DIA (CRM): quem mexeu em qual lead, de onde pra onde.
+// Usa a tabela nova; antes dela existir, cai nos eventos 'moveu' antigos.
+// ============================================================
+app.get("/api/movimentacoes", auth, (req, res) => {
+  const dia = DATA_RE.test(String(req.query.dia || "")) ? String(req.query.dia) : agoraSP().data;
+  const pid = req.query.pipeline_id ? Number(req.query.pipeline_id) : null;
+  const linhas = db.prepare(`SELECT m.id, m.lead_id, m.de_etapa_id, m.para_etapa_id, m.usuario_nome, m.origem, m.criado_em,
+      l.nome_clinica, l.cidade, de.nome de_nome, de.cor de_cor, para.nome para_nome, para.cor para_cor, para.pipeline_id
+    FROM movimentacoes m JOIN leads l ON l.id = m.lead_id
+      LEFT JOIN etapas de ON de.id = m.de_etapa_id LEFT JOIN etapas para ON para.id = m.para_etapa_id
+    WHERE date(m.criado_em, '-3 hours') = ? ${pid ? "AND (para.pipeline_id = ? OR de.pipeline_id = ?)" : ""}
+    ORDER BY m.id DESC LIMIT 500`).all(...[dia, ...(pid ? [pid, pid] : [])]);
+  // historico antigo (antes da tabela): so o texto do evento
+  const antigos = db.prepare(`SELECT e.lead_id, e.detalhe, e.criado_em, l.nome_clinica, l.cidade
+    FROM eventos e JOIN leads l ON l.id = e.lead_id
+    WHERE e.tipo = 'moveu' AND date(e.criado_em, '-3 hours') = ? ${pid ? "AND l.pipeline_id = ?" : ""}
+      AND NOT EXISTS (SELECT 1 FROM movimentacoes m WHERE m.lead_id = e.lead_id AND abs(strftime('%s', m.criado_em) - strftime('%s', e.criado_em)) < 3)
+    ORDER BY e.id DESC LIMIT 300`).all(...[dia, ...(pid ? [pid] : [])]);
+  const ligacoes = db.prepare(`SELECT COUNT(*) c FROM eventos e JOIN leads l ON l.id = e.lead_id
+    WHERE e.tipo = 'ligacao' AND date(e.criado_em, '-3 hours') = ? ${pid ? "AND l.pipeline_id = ?" : ""}`).get(...[dia, ...(pid ? [pid] : [])]).c;
+  res.json({ dia, movimentos: linhas, antigos, ligacoes });
+});
+
+// ============================================================
+// PREFERENCIAS DE TELA por usuario (ordem dos paineis do lead, layout do cartao)
+// ============================================================
+app.get("/api/eu/prefs", auth, (req, res) => {
+  const u = req.usuario?.id ? db.prepare("SELECT prefs FROM usuarios WHERE id = ?").get(req.usuario.id) : null;
+  let p = {}; try { p = JSON.parse(u?.prefs || "{}"); } catch { p = {}; }
+  res.json(p);
+});
+app.post("/api/eu/prefs", auth, (req, res) => {
+  if (!req.usuario?.id) return res.json({ ok: false, erro: "login sem usuário: preferência fica só neste navegador" });
+  const atual = (() => { try { return JSON.parse(db.prepare("SELECT prefs FROM usuarios WHERE id = ?").get(req.usuario.id)?.prefs || "{}"); } catch { return {}; } })();
+  const novo = { ...atual, ...(req.body && typeof req.body === "object" ? req.body : {}) };
+  const txt = JSON.stringify(novo);
+  if (txt.length > 8000) return res.status(400).json({ erro: "preferências grandes demais" });
+  db.prepare("UPDATE usuarios SET prefs = ? WHERE id = ?").run(txt, req.usuario.id);
+  res.json({ ok: true });
+});
+
+// ============================================================
+// AUDIOS PRONTOS: gravacoes que a pessoa manda num clique pela conversa
+// ============================================================
+const AUDIOS_DIR = join(DADOS_DIR, "audios-prontos");
+const MIDIA_DIR = join(DADOS_DIR, "midia");
+mkdirSync(AUDIOS_DIR, { recursive: true });
+mkdirSync(MIDIA_DIR, { recursive: true });
+const ARQ_RE = /^[a-z0-9_-]+\.(ogg|mp3|m4a|webm|wav|opus)$/i;
+const mimeAudio = (ext) => ({ mp3: "audio/mpeg", m4a: "audio/mp4", webm: "audio/webm", wav: "audio/wav", opus: "audio/ogg" }[ext] || "audio/ogg");
+const extDoAudio = (arquivo) => {
+  const ext = (extname(arquivo.originalname || "") || "").toLowerCase().replace(".", "");
+  if (["ogg", "mp3", "m4a", "webm", "wav", "opus"].includes(ext)) return ext;
+  const t = String(arquivo.mimetype || "");
+  return t.includes("mpeg") ? "mp3" : t.includes("mp4") || t.includes("aac") ? "m4a" : t.includes("webm") ? "webm" : t.includes("wav") ? "wav" : "ogg";
+};
+// audio "so meu" (usuario_id preenchido) so existe pro proprio dono
+function prontoVisivel(id, req) {
+  const a = db.prepare("SELECT * FROM audios_prontos WHERE id = ?").get(Number(id));
+  if (!a || (a.usuario_id && a.usuario_id !== req.usuario?.id)) return null;
+  return a;
+}
+app.get("/api/audios-prontos", auth, (req, res) => {
+  res.json(db.prepare(`SELECT a.id, a.nome, a.descricao, a.duracao, a.usuario_id, u.nome usuario_nome, a.criado_em
+    FROM audios_prontos a LEFT JOIN usuarios u ON u.id = a.usuario_id
+    WHERE a.usuario_id IS NULL OR a.usuario_id = ? ORDER BY a.id`).all(req.usuario?.id || 0));
+});
+app.post("/api/audios-prontos", auth, exige("conversar"), upload.single("audio"), (req, res) => {
+  if (!req.file) return res.status(400).json({ erro: "o arquivo de áudio não veio" });
+  const nome = String(req.body?.nome || "").trim().slice(0, 80);
+  if (!nome) { unlinkSync(req.file.path); return res.status(400).json({ erro: "dá um nome pro áudio" }); }
+  const ext = extDoAudio(req.file);
+  const arquivo = `pronto-${Date.now()}-${randomBytes(3).toString("hex")}.${ext}`;
+  renameSync(req.file.path, join(AUDIOS_DIR, arquivo));
+  const r = db.prepare("INSERT INTO audios_prontos (nome, descricao, arquivo, mime, duracao, usuario_id) VALUES (?,?,?,?,?,?)")
+    .run(nome, String(req.body?.descricao || "").trim().slice(0, 200) || null, arquivo, mimeAudio(ext),
+      Math.max(0, Math.round(Number(req.body?.duracao) || 0)) || null,
+      req.body?.so_meu === "1" ? (req.usuario?.id || null) : null);
+  res.json({ ok: true, id: r.lastInsertRowid });
+});
+app.patch("/api/audios-prontos/:id", auth, exige("conversar"), (req, res) => {
+  const a = prontoVisivel(req.params.id, req);
+  if (!a) return res.status(404).json({ erro: "áudio não existe" });
+  const nome = req.body?.nome !== undefined ? String(req.body.nome).trim().slice(0, 80) : a.nome;
+  if (!nome) return res.status(400).json({ erro: "o nome não pode ficar vazio" });
+  const desc = req.body?.descricao !== undefined ? String(req.body.descricao).trim().slice(0, 200) : a.descricao;
+  db.prepare("UPDATE audios_prontos SET nome = ?, descricao = ? WHERE id = ?").run(nome, desc || null, a.id);
+  res.json({ ok: true });
+});
+app.delete("/api/audios-prontos/:id", auth, exige("conversar"), (req, res) => {
+  const a = prontoVisivel(req.params.id, req);
+  if (!a) return res.status(404).json({ erro: "áudio não existe" });
+  db.prepare("DELETE FROM audios_prontos WHERE id = ?").run(a.id);
+  try { if (ARQ_RE.test(a.arquivo)) unlinkSync(join(AUDIOS_DIR, a.arquivo)); } catch { /* ja nao existia */ }
+  res.json({ ok: true });
+});
+// ouvir: link de navegacao (tag <audio>), entao o token vem em ?t=
+app.get("/api/audios-prontos/:id/arquivo", (req, res) => {
+  if (!tokenQueryValido(req.query.t)) return res.status(401).send("sem acesso");
+  const a = db.prepare("SELECT * FROM audios_prontos WHERE id = ?").get(Number(req.params.id));
+  if (!a || !ARQ_RE.test(a.arquivo) || !fsExiste(join(AUDIOS_DIR, a.arquivo))) return res.status(404).send("áudio não existe");
+  res.setHeader("Content-Type", a.mime || "audio/ogg");
+  res.sendFile(join(AUDIOS_DIR, a.arquivo));
+});
+// midia salva junto de uma mensagem (audio que o painel mandou)
+app.get("/api/midia/:arquivo", (req, res) => {
+  if (!tokenQueryValido(req.query.t)) return res.status(401).send("sem acesso");
+  const arq = String(req.params.arquivo);
+  if (!ARQ_RE.test(arq) || !fsExiste(join(MIDIA_DIR, arq))) return res.status(404).send("não existe");
+  res.setHeader("Content-Type", mimeAudio(arq.split(".").pop().toLowerCase()));
+  res.sendFile(join(MIDIA_DIR, arq));
+});
+
+// manda um arquivo de audio pro lead (gravado no painel, arquivo escolhido ou
+// audio pronto). OGG/Opus vai como mensagem de voz (ptt), igual gravar no
+// celular; outros formatos vao como audio normal.
+async function enviarAudioProLead(req, lead, caminho, ext, rotulo) {
+  let thread = null;
+  if (req.body?.thread_id) {
+    thread = getThread(Number(req.body.thread_id));
+    if (!thread || thread.lead_id !== lead.id) return { status: 400, erro: "thread não é desse lead" };
+  }
+  const alvo = thread?.telefone || lead.telefone;
+  const inst = instanciaDoLead(lead, thread?.instancia_id || null);
+  const trava = chipBloqueado(inst, req.usuario);
+  if (trava) return { status: 403, erro: trava };
+  const simulado = String(alvo).startsWith("0000");
+  if (!inst && !simulado) return { status: 502, erro: "nenhum WhatsApp conectado pra mandar esse áudio (Configurações > WhatsApp)" };
+  const b64 = readFileSync(caminho).toString("base64");
+  const voz = ext === "ogg" || ext === "opus";
+  const r = simulado ? { ok: true } : await enviarMidia(inst.uazapi_token, alvo, { tipo: voz ? "ptt" : "audio", arquivo: `data:${mimeAudio(ext)};base64,${b64}` });
+  if (!r.ok) return { status: 502, erro: `o WhatsApp recusou o áudio: ${r.erro}` };
+  // guarda uma copia pra conversa mostrar o player
+  const arqMidia = `msg-${Date.now()}-${randomBytes(3).toString("hex")}.${ext}`;
+  try { copyFileSync(caminho, join(MIDIA_DIR, arqMidia)); } catch { /* sem copia, so perde o player */ }
+  if (inst && !thread) fixarChipDoLead(lead.id, inst.id);
+  const ins = salvarMensagem(lead.id, "assistant", rotulo, "audio", arqMidia);
+  if (thread) db.prepare("UPDATE mensagens SET thread_id = ? WHERE id = ?").run(thread.id, ins.lastInsertRowid);
+  if (!lead.ia_pausada && !thread) { atualizarLead(lead.id, { ia_pausada: 1 }); registrarEvento(lead.id, "handoff", "painel (áudio)"); }
+  if (thread && !thread.ia_pausada) db.prepare("UPDATE threads SET ia_pausada = 1 WHERE id = ?").run(thread.id);
+  return { ok: true };
+}
+app.post("/api/lead/:id/audio-pronto", auth, exige("conversar"), async (req, res) => {
+  const lead = getLead(req.params.id);
+  if (!lead) return res.status(404).json({ erro: "lead nao existe" });
+  const a = prontoVisivel(req.body?.audio_id, req);
+  if (!a || !ARQ_RE.test(a.arquivo) || !fsExiste(join(AUDIOS_DIR, a.arquivo))) return res.status(404).json({ erro: "esse áudio pronto não existe mais" });
+  try {
+    const r = await enviarAudioProLead(req, lead, join(AUDIOS_DIR, a.arquivo), a.arquivo.split(".").pop().toLowerCase(), `[áudio pronto: ${a.nome}]`);
+    if (!r.ok) return res.status(r.status).json({ erro: r.erro });
+    registrarEvento(lead.id, "audio", `áudio pronto "${a.nome}" enviado pelo painel`);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ erro: e.message }); }
+});
+
+// ============================================================
+// FOTO DO GOOGLE MEU NEGOCIO pro card do kanban. So liga com GOOGLE_PLACES_KEY
+// no .env (Places API New, cobrada por busca). Busca UMA vez por lead e guarda
+// em disco; 'sem' marca quem nao tem foto pra nao pagar de novo.
+// ============================================================
+const PLACES_KEY = process.env.GOOGLE_PLACES_KEY || "";
+const FOTOS_DIR = join(DADOS_DIR, "fotos");
+mkdirSync(FOTOS_DIR, { recursive: true });
+const buscandoFoto = new Map();
+async function buscarFotoGoogle(lead) {
+  const q = `${lead.nome_clinica || ""} ${lead.cidade || ""}`.trim();
+  const r = await fetch("https://places.googleapis.com/v1/places:searchText", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Goog-Api-Key": PLACES_KEY, "X-Goog-FieldMask": "places.photos" },
+    body: JSON.stringify({ textQuery: q, languageCode: "pt-BR", maxResultCount: 1 }),
+    signal: AbortSignal.timeout(10_000),
+  });
+  const d = await r.json().catch(() => ({}));
+  const foto = d?.places?.[0]?.photos?.[0]?.name;
+  if (!foto || !/^places\/[\w-]+\/photos\/[\w-]+$/.test(foto)) return null;
+  const img = await fetch(`https://places.googleapis.com/v1/${foto}/media?maxWidthPx=160&maxHeightPx=160&key=${encodeURIComponent(PLACES_KEY)}`, { signal: AbortSignal.timeout(10_000) });
+  if (!img.ok || !String(img.headers.get("content-type") || "").startsWith("image/")) return null;
+  return Buffer.from(await img.arrayBuffer());
+}
+app.get("/api/lead/:id/foto", async (req, res) => {
+  if (!tokenQueryValido(req.query.t)) return res.status(401).end();
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id <= 0) return res.status(404).end();
+  const caminho = join(FOTOS_DIR, `${id}.jpg`);
+  if (fsExiste(caminho)) { res.setHeader("Cache-Control", "private, max-age=604800"); return res.sendFile(caminho); }
+  const lead = getLead(id);
+  if (!lead || !PLACES_KEY || lead.foto_status === "sem") return res.status(404).end();
+  try {
+    if (!buscandoFoto.has(id)) buscandoFoto.set(id, buscarFotoGoogle(lead).finally(() => setTimeout(() => buscandoFoto.delete(id), 1000)));
+    const buf = await buscandoFoto.get(id);
+    if (!buf) { db.prepare("UPDATE leads SET foto_status = 'sem' WHERE id = ?").run(id); return res.status(404).end(); }
+    writeFileSync(caminho, buf);
+    db.prepare("UPDATE leads SET foto_status = 'ok' WHERE id = ?").run(id);
+    res.setHeader("Cache-Control", "private, max-age=604800");
+    res.sendFile(caminho);
+  } catch (e) {
+    console.error("[foto] falhou:", e.message);
+    res.status(404).end();
+  }
+});
+
 app.get("/api/dashboard", auth, (req, res) => {
-  const soHoje = req.query.dias === "hoje";
-  const dias = soHoje ? 1 : Math.min(90, Math.max(1, Number(req.query.dias) || 30));
-  // "hoje" = o DIA CIVIL em SP (nao "ultimas 24h")
-  const desde = soHoje ? `datetime(date('now','-3 hours'), '+3 hours')` : `datetime('now','-${dias} days')`;
+  // periodo em DIAS CIVIS de SP: ?de=AAAA-MM-DD&ate=AAAA-MM-DD (ou ?dias=N/hoje)
+  const J = janelaDash(req);
+  const dias = J.dias;
   // filtro por pessoa (dono do lead ou da pipeline)
   const uidD = req.query.usuario_id ? Number(req.query.usuario_id) : null;
+  const aj = (m) => ajusteMetrica(m, J, uidD);
   const doDonoD = uidD ? ` AND l.id IN (SELECT id FROM leads WHERE usuario_id = ${uidD}
     OR pipeline_id IN (SELECT id FROM pipelines WHERE usuario_id = ${uidD}))` : "";
   const contaEvt = (tipo) => db.prepare(`SELECT COUNT(*) c FROM eventos e JOIN leads l ON l.id = e.lead_id
-    WHERE e.tipo = ? AND e.criado_em >= ${desde}${doDonoD}`).get(tipo).c;
+    WHERE e.tipo = ? AND ${J.cond("e.criado_em")}${doDonoD}`).get(tipo).c;
 
-  const disparos = contaEvt("disparo");
-  const respostas = contaEvt("resposta");
-  const reunioes = contaEvt("reuniao");
+  const disparos = contaEvt("disparo") + aj("disparos");
+  const respostas = contaEvt("resposta") + aj("respostas");
+  const reunioes = contaEvt("reuniao") + aj("reunioes");
   const optouts = contaEvt("optout");
   const followups = contaEvt("followup");
   const decisores = contaEvt("responsavel") + db.prepare(`SELECT COUNT(*) c FROM eventos e JOIN leads l ON l.id = e.lead_id
-    WHERE e.tipo='decisor_contato' AND e.criado_em >= ${desde}${doDonoD}`).get().c;
+    WHERE e.tipo='decisor_contato' AND ${J.cond("e.criado_em")}${doDonoD}`).get().c + aj("decisores");
 
   // funil por status (foto atual)
   const porStatus = {};
@@ -2043,10 +2330,10 @@ app.get("/api/dashboard", auth, (req, res) => {
 
   // serie diaria (disparos x respostas x reunioes) pros ultimos N dias
   const serie = db.prepare(`
-    SELECT date(e.criado_em) d,
+    SELECT date(e.criado_em, '-3 hours') d,
       SUM(e.tipo='disparo') disparos, SUM(e.tipo='resposta') respostas, SUM(e.tipo='reuniao') reunioes
     FROM eventos e JOIN leads l ON l.id = e.lead_id
-    WHERE e.criado_em >= ${desde}${doDonoD} GROUP BY date(e.criado_em) ORDER BY d`).all();
+    WHERE ${J.cond("e.criado_em")}${doDonoD} GROUP BY 1 ORDER BY d`).all();
 
   // por instancia (split/rotacao)
   const porWhats = listarInstancias().map((i) => ({ nome: i.nome, disparos_hoje: i.disparos_hoje || 0, cota_dia: i.cota_dia || 0, status: i.status }));
@@ -2055,7 +2342,7 @@ app.get("/api/dashboard", auth, (req, res) => {
   const motivosPerda = db.prepare("SELECT motivo_perda m, COUNT(*) c FROM leads WHERE status IN ('perdido','descartado') AND motivo_perda IS NOT NULL GROUP BY motivo_perda ORDER BY c DESC LIMIT 6").all();
 
   res.json({
-    dias, disparos, respostas, reunioes, optouts, followups, decisores,
+    dias, de: J.de, ate: J.ate, disparos, respostas, reunioes, optouts, followups, decisores,
     taxaResposta, taxaDecisor, taxaReuniao, taxaReuniaoDisparo,
     porStatus, bench, serie, porWhats, motivosPerda,
     guia: { disparo: BENCH.disparo, followup: BENCH.followup },
@@ -2078,7 +2365,7 @@ app.post("/api/lead/:id/ligacao", auth, exige("conversar"), (req, res) => {
   const obs = String(req.body?.obs || "").trim();
   registrarEvento(leadId, "ligacao", `${resultado}${obs ? " · " + obs : ""}`);
   if (obs) db.prepare("INSERT INTO notas (lead_id, texto, usuario_id) VALUES (?,?,?)")
-    .run(leadId, `📞 ${obs}`, req.usuario.id || null);
+    .run(leadId, `Ligação: ${obs}`, req.usuario.id || null);
 
   // move o card sozinho conforme o resultado. Prioridade:
   //   1) mapa configurado na pipeline (clique -> etapa que o usuario escolheu)
@@ -2095,7 +2382,7 @@ app.post("/api/lead/:id/ligacao", auth, exige("conversar"), (req, res) => {
     const chave = { conectou: "conectou", decisor: "decisor", reuniao: "reuniao", recusou: "perdido" }[resultado];
     if (chave) etapaAlvo = db.prepare("SELECT * FROM etapas WHERE pipeline_id = ? AND chave = ?").get(pipe.id, chave);
   }
-  if (etapaAlvo) moverLead(leadId, etapaAlvo.id);
+  if (etapaAlvo) { moverLead(leadId, etapaAlvo.id); registrarMovimento(leadId, lead.etapa_id, etapaAlvo.id, req.usuario, "ligação"); }
 
   // "NAO ATENDEU (IA DISPARA)": a ligacao ja foi CONTABILIZADA acima; agora o
   // lead vai pro funil de disparo do usuario e entra na fila da campanha — a IA
@@ -2131,23 +2418,23 @@ app.post("/api/lead/:id/ligacao", auth, exige("conversar"), (req, res) => {
 // contra os Benchmarks de Mercado.
 // ============================================================
 app.get("/api/dashboard/prospeccao", auth, (req, res) => {
-  const soHoje = req.query.dias === "hoje";
-  const dias = soHoje ? 1 : Math.min(90, Math.max(1, Number(req.query.dias) || 30));
-  const desde = soHoje ? `datetime(date('now','-3 hours'), '+3 hours')` : `datetime('now','-${dias} days')`;
+  const J = janelaDash(req);
+  const dias = J.dias;
   // FILTRO POR PESSOA: conta só os leads de quem for pedido (usuario_id do lead
   // ou dono da pipeline). Sem filtro = a equipe toda.
   const uid = req.query.usuario_id ? Number(req.query.usuario_id) : null;
   const doDono = uid ? ` AND l.id IN (SELECT id FROM leads WHERE usuario_id = ${uid}
     OR pipeline_id IN (SELECT id FROM pipelines WHERE usuario_id = ${uid}))` : "";
   const conta = (like) => db.prepare(`SELECT COUNT(*) c FROM eventos e JOIN leads l ON l.id = e.lead_id
-    WHERE e.tipo='ligacao' AND e.detalhe LIKE ? AND e.criado_em >= ${desde}${doDono}`).get(like + "%").c;
+    WHERE e.tipo='ligacao' AND e.detalhe LIKE ? AND ${J.cond("e.criado_em")}${doDono}`).get(like + "%").c;
+  const aj = (m) => ajusteMetrica(m, J, uid);
 
   const ligacoes = db.prepare(`SELECT COUNT(*) c FROM eventos e JOIN leads l ON l.id = e.lead_id
-    WHERE e.tipo='ligacao' AND e.criado_em >= ${desde}${doDono}`).get().c;
+    WHERE e.tipo='ligacao' AND ${J.cond("e.criado_em")}${doDono}`).get().c + aj("ligacoes");
   const naoAtendeu = conta("nao_atendeu");
-  const conectou = conta("conectou") + conta("decisor") + conta("reuniao"); // quem falou com alguém
-  const decisores = conta("decisor") + conta("reuniao");                    // chegou no decisor
-  const reunioes = conta("reuniao");
+  const conectou = conta("conectou") + conta("decisor") + conta("reuniao") + aj("atendeu"); // quem falou com alguém
+  const decisores = conta("decisor") + conta("reuniao") + aj("decisores");                  // chegou no decisor
+  const reunioes = conta("reuniao") + aj("reunioes");
   const recusou = conta("recusou");
 
   const pct = (a, b) => (b ? Math.round((a / b) * 1000) / 10 : 0);
@@ -2164,10 +2451,10 @@ app.get("/api/dashboard/prospeccao", auth, (req, res) => {
   }
 
   // série diária + produtividade
-  const serie = db.prepare(`SELECT date(e.criado_em) d, COUNT(*) ligacoes,
+  const serie = db.prepare(`SELECT date(e.criado_em, '-3 hours') d, COUNT(*) ligacoes,
       SUM(e.detalhe LIKE 'reuniao%') reunioes, SUM(e.detalhe LIKE 'decisor%' OR e.detalhe LIKE 'reuniao%') decisores
     FROM eventos e JOIN leads l ON l.id = e.lead_id
-    WHERE e.tipo='ligacao' AND e.criado_em >= ${desde}${doDono} GROUP BY date(e.criado_em) ORDER BY d`).all();
+    WHERE e.tipo='ligacao' AND ${J.cond("e.criado_em")}${doDono} GROUP BY 1 ORDER BY d`).all();
   const diasComLigacao = serie.length || 1;
   const porDia = Math.round(ligacoes / diasComLigacao);
 
@@ -2179,11 +2466,11 @@ app.get("/api/dashboard/prospeccao", auth, (req, res) => {
       LEFT JOIN usuarios u ON u.id = l.usuario_id
       LEFT JOIN pipelines p ON p.id = l.pipeline_id
       LEFT JOIN usuarios dono ON dono.id = p.usuario_id
-    WHERE e.tipo='ligacao' AND e.criado_em >= ${desde}
+    WHERE e.tipo='ligacao' AND ${J.cond("e.criado_em")}
     GROUP BY COALESCE(u.id, dono.id) ORDER BY ligacoes DESC LIMIT 8`).all();
 
   res.json({
-    dias, ligacoes, naoAtendeu, conectou, decisores, reunioes, recusou,
+    dias, de: J.de, ate: J.ate, ligacoes, naoAtendeu, conectou, decisores, reunioes, recusou,
     topo, meio, fundo, porDia,
     // quantas ligações o mercado gasta pra 1 reunião vs quantas você gastou
     ligacoesPorReuniao: reunioes ? Math.round(ligacoes / reunioes) : null,
@@ -2208,31 +2495,31 @@ app.get("/api/dashboard/prospeccao", auth, (req, res) => {
 // DASHBOARD GERAL — junta os dois canais
 // ============================================================
 app.get("/api/dashboard/geral", auth, (req, res) => {
-  const soHoje = req.query.dias === "hoje";
-  const dias = soHoje ? 1 : Math.min(90, Math.max(1, Number(req.query.dias) || 30));
-  const desde = soHoje ? `datetime(date('now','-3 hours'), '+3 hours')` : `datetime('now','-${dias} days')`;
+  const J = janelaDash(req);
+  const dias = J.dias;
   // filtro por pessoa (mesma regra do dashboard de prospecção)
   const uid = req.query.usuario_id ? Number(req.query.usuario_id) : null;
   const doDono = uid ? ` AND l.id IN (SELECT id FROM leads WHERE usuario_id = ${uid}
     OR pipeline_id IN (SELECT id FROM pipelines WHERE usuario_id = ${uid}))` : "";
   const evt = (tipo) => db.prepare(`SELECT COUNT(*) c FROM eventos e JOIN leads l ON l.id = e.lead_id
-    WHERE e.tipo=? AND e.criado_em >= ${desde}${doDono}`).get(tipo).c;
+    WHERE e.tipo=? AND ${J.cond("e.criado_em")}${doDono}`).get(tipo).c;
   const lig = (like) => db.prepare(`SELECT COUNT(*) c FROM eventos e JOIN leads l ON l.id = e.lead_id
-    WHERE e.tipo='ligacao' AND e.detalhe LIKE ? AND e.criado_em >= ${desde}${doDono}`).get(like + "%").c;
+    WHERE e.tipo='ligacao' AND e.detalhe LIKE ? AND ${J.cond("e.criado_em")}${doDono}`).get(like + "%").c;
+  const aj = (m) => ajusteMetrica(m, J, uid);
   const pct = (a, b) => (b ? Math.round((a / b) * 1000) / 10 : 0);
 
   // canal DISPARO
-  const disparos = evt("disparo");
-  const respostasD = evt("resposta");
+  const disparos = evt("disparo") + aj("disparos");
+  const respostasD = evt("resposta") + aj("respostas");
   const reunioesD = evt("reuniao");
   // canal LIGACAO
   const ligacoes = db.prepare(`SELECT COUNT(*) c FROM eventos e JOIN leads l ON l.id = e.lead_id
-    WHERE e.tipo='ligacao' AND e.criado_em >= ${desde}${doDono}`).get().c;
+    WHERE e.tipo='ligacao' AND ${J.cond("e.criado_em")}${doDono}`).get().c + aj("ligacoes");
   const reunioesL = lig("reuniao");
-  const decisoresL = lig("decisor") + reunioesL;
+  const decisoresL = lig("decisor") + reunioesL + aj("decisores");
 
   const toques = disparos + ligacoes;
-  const reunioes = reunioesD + reunioesL;
+  const reunioes = reunioesD + reunioesL + aj("reunioes");
 
   // dinheiro: o que está em jogo e o que fechou
   const valor = db.prepare(`SELECT
@@ -2250,7 +2537,7 @@ app.get("/api/dashboard/geral", auth, (req, res) => {
     GROUP BY p.id ORDER BY valor DESC`).all();
 
   res.json({
-    dias,
+    dias, de: J.de, ate: J.ate,
     canais: {
       disparo: { toques: disparos, respostas: respostasD, reunioes: reunioesD, taxa: pct(reunioesD, disparos) },
       ligacao: { toques: ligacoes, decisores: decisoresL, reunioes: reunioesL, taxa: pct(reunioesL, ligacoes) },
@@ -2422,6 +2709,8 @@ app.get("/api/marca", (req, res) => {
     // (antes o painel deduzia pelo NOME do produto — fragil, quebrava se padronizasse a marca)
     interno: MODO_IA !== "api",
     suporte: process.env.SUPORTE_WHATS || "",
+    // foto do Google Meu Negocio nos cards (so com GOOGLE_PLACES_KEY no .env)
+    fotos: Boolean(PLACES_KEY),
   });
 });
 
