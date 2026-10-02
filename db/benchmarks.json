@@ -1,0 +1,73 @@
+{
+  "_nota": "Benchmarks de mercado pro dashboard de prospeccao. NUNCA citar a fonte pelo nome na UI — usar sempre 'Benchmarks de Mercado'.",
+  "ligacao": {
+    "topo_conexao_pct": { "min": 50, "rotulo": "Conexão (atendeu / ligou)", "abaixo": "Lista ruim ou horário errado" },
+    "meio_decisor_pct": { "min": 40, "rotulo": "Decisor (falou c/ decisor / conectou)", "abaixo": "Abordagem com a atendente está fraca" },
+    "fundo_reuniao_pct": { "min": 33, "ideal": 66, "rotulo": "Reunião (agendou / falou c/ decisor)", "abaixo": "Script com decisor ou oferta fraca" },
+    "ligacoes_hora": { "min": 15, "rotulo": "Ligações por hora" },
+    "decisores_hora": { "min": 4, "rotulo": "Decisores mapeados por hora" },
+    "ligacoes_dia": { "min": 30, "ideal": 50, "rotulo": "Ligações por dia" },
+    "mercado_ligacoes_por_reuniao": 60
+  },
+  "disparo": {
+    "disparo_decisor_pct": { "min": 8, "ideal": 12, "rotulo": "Disparo → decisor" },
+    "decisor_reuniao_pct": { "min": 40, "ideal": 50, "rotulo": "Decisor → reunião" },
+    "disparos_dia": { "min": 40, "ideal": 60, "rotulo": "Disparos por dia" },
+    "resposta_decisor_pct": { "min": 10, "ideal": 20, "rotulo": "Taxa de resposta (copy boa)" },
+    "mercado_disparos_por_reuniao": 100
+  },
+  "followup": {
+    "follow_decisor_pct": { "min": 30, "ideal": 40, "rotulo": "Follow-up → decisor" },
+    "decisor_reuniao_pct": { "min": 50, "rotulo": "Decisor → reunião" },
+    "follows_dia": { "min": 20, "ideal": 30, "rotulo": "Follow-ups por dia" },
+    "_nota_canal": "Follow por LIGAÇÃO converte ~66%; por mensagem ~20% (40% menos performance)"
+  },
+  "rotina": {
+    "horas_prospeccao_dia": { "min": 2, "ideal": 3 },
+    "pomodoro_min": 50,
+    "pomodoro_descanso_min": 10,
+    "reuniao_por_pomodoro": 1,
+    "max_seg_entre_ligacoes": 180,
+    "toques_antes_de_pausar": 10
+  },
+  "horizontes": {
+    "H1": { "rotulo": "Hoje", "janela_horas": 24, "criterio": "leads das últimas 24h e respostas recentes" },
+    "H2": { "rotulo": "Semana", "janela_dias": [2, 7], "criterio": "não respondeu em 24h" },
+    "H3": { "rotulo": "Mês", "criterio": "lead 3 estrelas, ticket alto, ciclo longo" },
+    "regra_h1_h2_dias": 5,
+    "regra_h2_h3_dias": 7
+  },
+  "lead_score": {
+    "corte": 60,
+    "criterios": {
+      "participou_webinario": 25,
+      "entrou_no_grupo": 15,
+      "mapeamento_de_conexao": 15,
+      "site_estruturado": 10,
+      "google_meu_negocio_ativo": 8,
+      "convidou_socio": 7,
+      "capital_social_adequado": 6,
+      "quatro_mais_colaboradores": 6
+    }
+  },
+  "qualificacao_lista": {
+    "min_avaliacoes_google": 9,
+    "cidade_min_habitantes": 50000,
+    "ligacoes_teste_por_cidade": [5, 10]
+  },
+  "horarios_ouro": [
+    { "faixa": "08:00-09:00", "perfil": "B2B", "nota": "maior taxa de atendimento" },
+    { "faixa": "11:15-12:00", "perfil": "B2B", "nota": "janela pré-almoço" },
+    { "faixa": "14:00-15:30", "perfil": "B2B", "nota": "pico pós-almoço" },
+    { "faixa": "17:00-18:30", "perfil": "B2B/B2C", "nota": "decisor desacelerando" }
+  ],
+  "evitar": ["12:00-14:00 ligação B2B", "sexta após 16h", "segunda 07h-09h"],
+  "mapeamento_conexao": [
+    "nome da atendente",
+    "nome do decisor",
+    "horário em que o decisor está",
+    "telefone de atendimento/pessoal",
+    "como abordar o decisor",
+    "status da conta"
+  ]
+}

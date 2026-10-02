@@ -1,0 +1,23 @@
+node_modules/
+
+# segredos: NUNCA commitar. Cada operacao tem o .env dela na VPS
+# (/root/facilita-sdr/.env e /root/sdr-clientes/<slug>/.env)
+.env
+.env.*
+!.env.example
+
+# estado de execucao: o banco de cada operacao tem conversa real de lead
+dados/
+*.db
+*.db-shm
+*.db-wal
+
+# descartaveis de diagnostico (costumam carregar telefone de lead)
+_*.js
+_*.cjs
+scripts/_tmp-*
+*.log
+tmp/
+*.bak
+*.bak-*
+.vercel/

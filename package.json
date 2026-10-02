@@ -1,0 +1,16 @@
+{
+  "name": "facilita-sdr",
+  "version": "1.0.0",
+  "description": "Facilita SDR — prospecção outbound no WhatsApp com IA que marca reunião",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "importar": "node scripts/importar-csv.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.3.0",
+    "express": "^4.19.2",
+    "multer": "^1.4.5-lts.1"
+  }
+}

@@ -1,0 +1,14 @@
+[Unit]
+Description=Facilita SDR - prospeccao WhatsApp com IA
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/root/facilita-sdr
+EnvironmentFile=/root/facilita-sdr/.env
+ExecStart=/usr/bin/node /root/facilita-sdr/server.js
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
