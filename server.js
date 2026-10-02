@@ -30,6 +30,7 @@ import {
 import {
   parseWebhook, enviarTexto, enviarMidia, mostrarDigitando, pararDigitando, criarInstancia,
   conectarInstancia, statusInstanciaLive, statusConectado, configurarWebhook, checarWhatsapp,
+  fotoPerfilWhatsapp, uazapiConfigurada,
 } from "./lib/uazapi.js";
 import { responderLead, horariosDisponiveis } from "./lib/agente.js";
 import { transcreverAudioMensagem } from "./lib/transcrever.js";
@@ -2244,15 +2245,38 @@ app.post("/api/lead/:id/audio-pronto", auth, exige("conversar"), async (req, res
 });
 
 // ============================================================
-// FOTO DO GOOGLE MEU NEGOCIO pro card do kanban. So liga com GOOGLE_PLACES_KEY
-// no .env (Places API New, cobrada por busca). Busca UMA vez por lead e guarda
-// em disco; 'sem' marca quem nao tem foto pra nao pagar de novo.
+// FOTO DO LEAD (avatar do card e da tela do lead). Primeiro a foto de perfil do
+// WhatsApp do numero do lead (via uazapi, de graca); se nao tiver, a do Google
+// Meu Negocio quando existe GOOGLE_PLACES_KEY no .env (cobrada por busca).
+// Fica salva em disco e e renovada a cada 7 dias ('sem' tambem tenta de novo
+// depois de 7 dias, porque o lead pode colocar foto).
 // ============================================================
 const PLACES_KEY = process.env.GOOGLE_PLACES_KEY || "";
 const FOTOS_DIR = join(DADOS_DIR, "fotos");
 mkdirSync(FOTOS_DIR, { recursive: true });
-const buscandoFoto = new Map();
+const FOTO_VALIDADE_MS = 7 * 24 * 3600 * 1000;
+const fotosLigadas = () => uazapiConfigurada() || Boolean(PLACES_KEY);
+
+async function baixarImagem(url) {
+  const img = await fetch(url, { signal: AbortSignal.timeout(10_000) });
+  if (!img.ok || !String(img.headers.get("content-type") || "").startsWith("image/")) return null;
+  const buf = Buffer.from(await img.arrayBuffer());
+  return buf.length > 0 && buf.length < 3_000_000 ? buf : null;
+}
+async function buscarFotoWhatsapp(lead) {
+  // so LE a foto (nao manda nada), entao serve qualquer chip conectado
+  const inst = instanciaDoLead(lead)
+    || db.prepare("SELECT * FROM instancias WHERE status = 'conectado' AND uazapi_token IS NOT NULL ORDER BY id LIMIT 1").get();
+  if (!inst?.uazapi_token) return null;
+  for (const tel of [...new Set([lead.telefone, lead.telefone_decisor].filter(Boolean))]) {
+    if (String(tel).startsWith("0000")) continue; // lead simulado
+    const url = await fotoPerfilWhatsapp(inst.uazapi_token, String(tel).replace(/\D/g, ""));
+    if (url) { const buf = await baixarImagem(url).catch(() => null); if (buf) return buf; }
+  }
+  return null;
+}
 async function buscarFotoGoogle(lead) {
+  if (!PLACES_KEY) return null;
   const q = `${lead.nome_clinica || ""} ${lead.cidade || ""}`.trim();
   const r = await fetch("https://places.googleapis.com/v1/places:searchText", {
     method: "POST",
@@ -2263,26 +2287,52 @@ async function buscarFotoGoogle(lead) {
   const d = await r.json().catch(() => ({}));
   const foto = d?.places?.[0]?.photos?.[0]?.name;
   if (!foto || !/^places\/[\w-]+\/photos\/[\w-]+$/.test(foto)) return null;
-  const img = await fetch(`https://places.googleapis.com/v1/${foto}/media?maxWidthPx=160&maxHeightPx=160&key=${encodeURIComponent(PLACES_KEY)}`, { signal: AbortSignal.timeout(10_000) });
-  if (!img.ok || !String(img.headers.get("content-type") || "").startsWith("image/")) return null;
-  return Buffer.from(await img.arrayBuffer());
+  return baixarImagem(`https://places.googleapis.com/v1/${foto}/media?maxWidthPx=160&maxHeightPx=160&key=${encodeURIComponent(PLACES_KEY)}`);
 }
+// fila: no maximo 2 buscas ao mesmo tempo, com folga entre elas, pra um kanban
+// cheio nao disparar centenas de consultas no WhatsApp de uma vez
+const buscandoFoto = new Map();
+let fotosRodando = 0;
+const filaFotos = [];
+function proximaFoto() {
+  if (fotosRodando >= 2 || !filaFotos.length) return;
+  const { lead, ok, falha } = filaFotos.shift();
+  fotosRodando++;
+  (async () => (await buscarFotoWhatsapp(lead).catch(() => null)) || (await buscarFotoGoogle(lead).catch(() => null)))()
+    .then(ok, falha)
+    .finally(() => setTimeout(() => { fotosRodando--; proximaFoto(); }, 350));
+}
+function buscarFotoLead(lead) {
+  if (!buscandoFoto.has(lead.id)) {
+    const p = new Promise((ok, falha) => { filaFotos.push({ lead, ok, falha }); proximaFoto(); });
+    buscandoFoto.set(lead.id, p.then((buf) => {
+      const caminho = join(FOTOS_DIR, `${lead.id}.jpg`);
+      if (buf) writeFileSync(caminho, buf);
+      db.prepare("UPDATE leads SET foto_status = ?, foto_em = datetime('now') WHERE id = ?").run(buf || fsExiste(caminho) ? "ok" : "sem", lead.id);
+      return buf;
+    }).finally(() => setTimeout(() => buscandoFoto.delete(lead.id), 1000)));
+  }
+  return buscandoFoto.get(lead.id);
+}
+const fotoVencida = (lead) => !lead.foto_em || Date.now() - new Date(lead.foto_em.replace(" ", "T") + "Z").getTime() > FOTO_VALIDADE_MS;
+
 app.get("/api/lead/:id/foto", async (req, res) => {
   if (!tokenQueryValido(req.query.t)) return res.status(401).end();
   const id = Number(req.params.id);
   if (!Number.isInteger(id) || id <= 0) return res.status(404).end();
-  const caminho = join(FOTOS_DIR, `${id}.jpg`);
-  if (fsExiste(caminho)) { res.setHeader("Cache-Control", "private, max-age=604800"); return res.sendFile(caminho); }
   const lead = getLead(id);
-  if (!lead || !PLACES_KEY || lead.foto_status === "sem") return res.status(404).end();
+  if (!lead) return res.status(404).end();
+  const caminho = join(FOTOS_DIR, `${id}.jpg`);
+  const servir = () => { res.setHeader("Cache-Control", "private, max-age=86400"); res.sendFile(caminho); };
+  if (fsExiste(caminho)) {
+    if (fotosLigadas() && fotoVencida(lead)) buscarFotoLead(lead).catch(() => {}); // renova por tras, serve a antiga
+    return servir();
+  }
+  if (!fotosLigadas() || (lead.foto_status === "sem" && !fotoVencida(lead))) return res.status(404).end();
   try {
-    if (!buscandoFoto.has(id)) buscandoFoto.set(id, buscarFotoGoogle(lead).finally(() => setTimeout(() => buscandoFoto.delete(id), 1000)));
-    const buf = await buscandoFoto.get(id);
-    if (!buf) { db.prepare("UPDATE leads SET foto_status = 'sem' WHERE id = ?").run(id); return res.status(404).end(); }
-    writeFileSync(caminho, buf);
-    db.prepare("UPDATE leads SET foto_status = 'ok' WHERE id = ?").run(id);
-    res.setHeader("Cache-Control", "private, max-age=604800");
-    res.sendFile(caminho);
+    const buf = await buscarFotoLead(lead);
+    if (!buf) return res.status(404).end();
+    servir();
   } catch (e) {
     console.error("[foto] falhou:", e.message);
     res.status(404).end();
@@ -2709,8 +2759,8 @@ app.get("/api/marca", (req, res) => {
     // (antes o painel deduzia pelo NOME do produto — fragil, quebrava se padronizasse a marca)
     interno: MODO_IA !== "api",
     suporte: process.env.SUPORTE_WHATS || "",
-    // foto do Google Meu Negocio nos cards (so com GOOGLE_PLACES_KEY no .env)
-    fotos: Boolean(PLACES_KEY),
+    // foto do lead nos cards: WhatsApp (uazapi) e/ou Google Meu Negocio
+    fotos: fotosLigadas(),
   });
 });
 

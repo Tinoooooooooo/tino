@@ -363,6 +363,7 @@
   .av { width:40px; height:40px; border-radius:10px; flex:none; display:grid; place-items:center; font-family:var(--f-display); font-weight:700;
     font-size:13px; color:#fff; position:relative; overflow:hidden; background:var(--raise); }
   .av img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+  #crm-lead-av .av { cursor:zoom-in; }
   .av.sm { width:30px; height:30px; border-radius:8px; font-size:11px; }
   .av.lg { width:46px; height:46px; border-radius:12px; font-size:15px; }
   .pegar-col { font-size:11px; font-weight:700; color:var(--verde-esc); border:1px solid var(--verde); background:var(--verde-soft);
@@ -876,7 +877,7 @@
     <div id="crm-lead">
       <div class="crm-lead-topo">
         <button class="btn sec icone" onclick="fecharLeadNoCRM()" title="Voltar para o CRM"><span data-ic="voltar" data-ic-tam="17"></span></button>
-        <div id="crm-lead-av"></div>
+        <div id="crm-lead-av" onclick="verFotoLead()" title="Ver foto"></div>
         <div style="min-width:0">
           <div class="lead-tit" id="crm-lead-nome"></div>
           <div class="lead-sub"><span id="crm-lead-etapa"></span><span id="crm-lead-tel"></span></div>
@@ -1977,7 +1978,7 @@ function menuCRM(ev) {
 }
 
 // ---- LAYOUT DO CARTAO: cada pessoa escolhe o que aparece no card ----
-const CAMPOS_CARTAO = [["foto", "Foto da empresa (Google Meu Negócio)"], ["decisor", "Nome do decisor ou contato"], ["telefone", "Telefone"],
+const CAMPOS_CARTAO = [["foto", "Foto de perfil do WhatsApp do lead"], ["decisor", "Nome do decisor ou contato"], ["telefone", "Telefone"],
   ["decisorBox", "Atalho para o WhatsApp do decisor"], ["tarefa", "Próxima tarefa"], ["ia", "Quem atende (IA ou humano)"], ["tags", "Lista e nicho"], ["valor", "Valor da venda"], ["data", "Data do último movimento"]];
 const CARTAO_PADRAO = { foto: true, decisor: true, telefone: true, decisorBox: true, tarefa: true, ia: true, tags: true, valor: true, data: true };
 let prefs = (() => { try { return JSON.parse(localStorage.getItem("prefs_cache") || "{}"); } catch { return {}; } })();
@@ -1996,7 +1997,7 @@ function editarLayoutCartao() {
   const exemplo = todosLeadsKanban()[0];
   modal("Editar layout do cartão", `
     <div style="font-size:12.5px; color:var(--muted); margin-bottom:6px">Escolha o que aparece em cada card do funil. Fica salvo na sua conta.</div>
-    ${CAMPOS_CARTAO.map(([k, r]) => `<div class="linha-i" style="padding:9px 0"><div class="tx"><b style="font-weight:500">${r}</b>${k === "foto" && !window.__fotosGoogle ? '<span>Precisa da chave do Google Places no servidor. Sem ela, aparecem as iniciais.</span>' : ""}</div>
+    ${CAMPOS_CARTAO.map(([k, r]) => `<div class="linha-i" style="padding:9px 0"><div class="tx"><b style="font-weight:500">${r}</b>${k === "foto" && !window.__fotosLead ? '<span>Precisa do WhatsApp conectado (uazapi). Sem ele, aparecem as iniciais.</span>' : ""}</div>
       <button class="sw ${c[k] ? "on" : ""}" data-cartao="${k}" aria-label="${r}"></button></div>`).join("")}
     ${exemplo ? `<div style="font-size:12px; color:var(--muted); margin:12px 0 6px">Prévia</div><div id="cartao-previa" style="pointer-events:none"></div>` : ""}`, 460);
   const previa = () => { const el = $("#cartao-previa"); if (el && exemplo) el.innerHTML = cardLead(exemplo); };
@@ -2403,17 +2404,28 @@ async function apagarSelecionados() {
   await carregarKanban(); atualizar();
 }
 
-// AVATAR do lead: foto do Google Meu Negocio (quando o servidor tem a chave do
-// Places) por cima das iniciais coloridas. Sem foto, ficam as iniciais.
+// AVATAR do lead: foto de perfil do WhatsApp do lead (ou do Google Meu Negocio,
+// se o servidor tiver a chave) por cima das iniciais coloridas. Sem foto, ficam
+// as iniciais. No kanban respeita o "layout do cartao"; na tela do lead sempre mostra.
 const CORES_AV = ["#4f8ff0", "#22b5c9", "#e2b23c", "#ef8a3c", "#2fbf7d", "#9b7cf0", "#e3638f", "#14a37f", "#d9534f", "#5f7fd0"];
+const urlFotoLead = (id) => `${API}/api/lead/${Number(id)}/foto?t=${encodeURIComponent(SENHA)}`;
 function avatarLead(l, tam = "") {
   const nome = String(l?.nome_clinica || "?").replace(/^(dr\.?|dra\.?|cl[ií]nica|consult[oó]rio)\s+/i, "");
   const ini = nome.split(/\s+/).filter((w) => /^[a-zà-ú0-9]/i.test(w)).slice(0, 2).map((w) => w[0]).join("").toUpperCase() || "?";
   let h = 0; for (const c of String(l?.nome_clinica || "")) h = (h * 31 + c.charCodeAt(0)) >>> 0;
   const cor = CORES_AV[h % CORES_AV.length];
-  const foto = window.__fotosGoogle && cartao().foto && l?.id && l.foto_status !== "sem"
-    ? `<img src="${API}/api/lead/${Number(l.id)}/foto?t=${encodeURIComponent(SENHA)}" loading="lazy" alt="" onerror="this.remove()">` : "";
+  const mostrar = window.__fotosLead && l?.id && (tam === "lg" || tam === "xl" || cartao().foto);
+  const foto = mostrar ? `<img src="${urlFotoLead(l.id)}" loading="lazy" alt="" onerror="this.remove()">` : "";
   return `<div class="av ${tam}" style="background:linear-gradient(140deg, ${cor}, color-mix(in srgb, ${cor} 55%, #0b1220))">${esc(ini)}${foto}</div>`;
+}
+// clique na foto da tela do lead: abre grande
+function verFotoLead() {
+  const img = $("#crm-lead-av img");
+  if (!img || !img.naturalWidth) return;
+  const nome = $("#crm-lead-nome")?.textContent || "Foto do lead";
+  modal(esc(nome), `<div style="display:grid; place-items:center; gap:10px">
+    <img src="${esc(img.src)}" alt="" style="width:100%; max-width:400px; aspect-ratio:1; object-fit:cover; border-radius:16px">
+    <span class="muted" style="font-size:12.5px">Foto de perfil do WhatsApp</span></div>`, 460);
 }
 
 // card do lead: vermelho quando tem tarefa atrasada
@@ -6271,7 +6283,7 @@ async function carregarMarca() {
     // fonte da verdade = flag "interno" do servidor (SDR_IA_MODO). O fallback por
     // nome cobre container antigo que ainda nao devolve a flag.
     window.__modoCliente = m.interno !== undefined ? !m.interno : nome !== "Prospecta AI";
-    window.__fotosGoogle = Boolean(m.fotos);
+    window.__fotosLead = Boolean(m.fotos);
     window.__nomeCliente = m.cliente || "";
     if (window.__modoCliente) {
       document.querySelectorAll(".so-interno").forEach((e) => e.style.display = "none");
