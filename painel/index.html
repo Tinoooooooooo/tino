@@ -178,6 +178,46 @@
   .pf-salvar .ic { transition:transform .2s; } .pf-salvar:hover .ic { transform:translateX(3px); }
   @media (max-width:760px){ .sb-perfil { margin-top:0; border-top:0; border-left:1px solid var(--border); padding:6px 10px; width:auto; }
     .sb-perfil .nm, .pf-curva { display:none; } .pf-menu { transform-origin:top right; } }
+  /* ===== INTEGRACOES > META ADS ===== */
+  .meta-hero { display:flex; gap:16px; align-items:center; padding:20px 22px; flex-wrap:wrap;
+    background:linear-gradient(135deg, color-mix(in srgb, #0866ff 20%, var(--surface)), color-mix(in srgb, #0866ff 5%, var(--surface))); }
+  .meta-logo { width:54px; height:54px; border-radius:15px; display:grid; place-items:center; flex:none; color:#fff;
+    background:linear-gradient(140deg, #0866ff, #0a7cff 50%, #5aa7ff); box-shadow:0 8px 22px -8px #0866ff; }
+  .meta-hero h3 { margin:0; font-family:var(--f-display); font-size:18px; }
+  .meta-hero p { margin:3px 0 0; color:var(--muted); font-size:13px; max-width:560px; }
+  .meta-st { font-size:12px; font-weight:700; padding:4px 10px; border-radius:20px; display:inline-flex; align-items:center; gap:6px; }
+  .meta-st::before { content:""; width:7px; height:7px; border-radius:50%; background:currentColor; }
+  .meta-st.ok { color:var(--verde); background:color-mix(in srgb, var(--verde) 14%, transparent); }
+  .meta-st.off { color:var(--muted); background:var(--raise); }
+  .meta-st.aviso { color:var(--amarelo); background:color-mix(in srgb, var(--amarelo) 14%, transparent); }
+  .meta-nums { display:grid; grid-template-columns:repeat(4, 1fr); gap:10px; }
+  .meta-num { background:var(--surface-2); border:1px solid var(--border); border-radius:12px; padding:12px 14px; }
+  .meta-num b { display:block; font-family:var(--f-display); font-size:22px; }
+  .meta-num span { font-size:12px; color:var(--muted); }
+  .meta-campos { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .meta-campos label { display:block; font-size:12.5px; font-weight:600; margin-bottom:6px; }
+  .meta-campos .dica { font-size:11.5px; color:var(--muted); margin-top:5px; }
+  .meta-campos input, .meta-campos select { width:100%; }
+  .meta-passos { margin:0; padding-left:18px; font-size:13px; color:var(--muted); display:grid; gap:5px; }
+  .meta-passos b { color:var(--text); }
+  .meta-mapa { display:grid; gap:2px; }
+  .meta-linha { display:grid; grid-template-columns:minmax(150px, 1fr) minmax(200px, 1.2fr); gap:12px; align-items:center;
+    padding:9px 4px; border-bottom:1px solid var(--border); }
+  .meta-linha:last-child { border-bottom:0; }
+  .meta-linha .et { display:flex; align-items:center; gap:9px; font-weight:600; font-size:13.5px; }
+  .meta-linha .et i { width:9px; height:9px; border-radius:50%; flex:none; }
+  .meta-linha .sel { display:flex; gap:6px; }
+  .meta-linha .sel select { flex:1; }
+  .meta-linha .sel input { width:140px; }
+  .meta-linha .desc { grid-column:2; font-size:11.5px; color:var(--muted); margin-top:-4px; }
+  .meta-linha.desq .et { color:var(--vermelho); }
+  .ev-st { font-size:11px; font-weight:700; padding:2px 8px; border-radius:6px; white-space:nowrap; }
+  .ev-st.enviado { color:var(--verde); background:color-mix(in srgb, var(--verde) 13%, transparent); }
+  .ev-st.erro { color:var(--vermelho); background:color-mix(in srgb, var(--vermelho) 13%, transparent); }
+  .ev-st.pendente { color:var(--amarelo); background:color-mix(in srgb, var(--amarelo) 13%, transparent); }
+  .ev-st.ignorado { color:var(--muted); background:var(--raise); }
+  .tag.anuncio { color:#3b82f6; background:color-mix(in srgb, #0866ff 14%, transparent); }
+  @media (max-width:900px){ .meta-campos, .meta-nums { grid-template-columns:1fr 1fr; } .meta-linha { grid-template-columns:1fr; } .meta-linha .desc { grid-column:1; } }
   #sidebar.recolhido { width:86px; flex-basis:86px; }
   main { padding:20px 24px 40px; flex:1; min-width:0; overflow-y:auto; height:100vh; position:relative; }
   @media (min-width:1900px){ main { padding:24px 36px 40px; } }
@@ -1205,8 +1245,10 @@ Oi! Aqui é o Matheus. Preciso falar com quem cuida da {nome_clinica}, é você?
         <button class="sub-cfg on" data-sub="config" onclick="subCfg('config')"><span class="cfg-mi" style="--c:#8193ae"><span data-ic="sliders" data-ic-tam="16"></span></span>Configurações gerais</button>
         <button class="sub-cfg" data-sub="equipe" onclick="subCfg('equipe')"><span class="cfg-mi" style="--c:#4f8ff0"><span data-ic="usuarios" data-ic-tam="16"></span></span>Usuários</button>
         <button class="sub-cfg" id="sub-assinatura" data-sub="assinatura" style="display:none" onclick="subCfg('assinatura')"><span class="cfg-mi" style="--c:#14a37f"><span data-ic="cartao" data-ic-tam="16"></span></span>Assinatura</button>
-        <div class="cfg-grupo">Canais</div>
+        <div class="cfg-grupo">Integrações</div>
         <button class="sub-cfg" data-sub="whatsapp" onclick="subCfg('whatsapp')"><span class="cfg-mi" style="--c:#25d366"><span data-ic="whatsapp" data-ic-tam="16"></span></span>WhatsApp<span class="fim" id="cfg-wa-dot"></span></button>
+        <button class="sub-cfg" data-sub="meta" data-precisa="editar_campanha" onclick="subCfg('meta')"><span class="cfg-mi" style="--c:#0866ff"><span data-ic="meta" data-ic-tam="17"></span></span>Meta Ads<span class="fim" id="cfg-meta-dot"></span></button>
+        <div class="cfg-grupo">Canais</div>
         <button class="sub-cfg" data-sub="audios" onclick="subCfg('audios')"><span class="cfg-mi" style="--c:#ef8a3c"><span data-ic="onda" data-ic-tam="16"></span></span>Áudios da equipe</button>
         <button class="sub-cfg" data-sub="agenda" onclick="subCfg('agenda')"><span class="cfg-mi" style="--c:#4f8ff0"><span data-ic="calcheck" data-ic-tam="16"></span></span>Google Agenda</button>
         <button class="sub-cfg" data-sub="telegram" onclick="subCfg('telegram')"><span class="cfg-mi" style="--c:#22b5c9"><span data-ic="aviao" data-ic-tam="16"></span></span>Notificações do Telegram</button>
@@ -1356,6 +1398,10 @@ Oi! Aqui é o Matheus. Preciso falar com quem cuida da {nome_clinica}, é você?
   <div id="aba-perfil" style="display:none">
     <div class="cfg-tit"><span class="cfg-mi" style="--c:#2fbf7d"><span data-ic="pessoa" data-ic-tam="21"></span></span><div><h2>Meu perfil</h2><p>Seu avatar e o nome que aparece no menu e para a equipe.</p></div></div>
     <div class="card pf-card" id="pf-card"></div>
+  </div>
+  <div id="aba-meta" style="display:none">
+    <div class="cfg-tit"><span class="cfg-mi" style="--c:#0866ff"><span data-ic="meta" data-ic-tam="22"></span></span><div><h2>Meta Ads</h2><p>Devolve para a Meta o que acontece com cada lead no funil, para ela otimizar suas campanhas.</p></div></div>
+    <div id="meta-corpo" style="display:flex; flex-direction:column; gap:14px"><div class="card caixa muted">Carregando...</div></div>
   </div>
   <div id="aba-equipe" style="display:none">
     <div class="cfg-tit"><span class="cfg-mi" style="--c:#4f8ff0"><span data-ic="usuarios" data-ic-tam="21"></span></span><div><h2>Usuários</h2><p>Quem trabalha no CRM. Cada pessoa entra com o e-mail e a senha dela e faz só o que o papel permite.</p></div></div>
@@ -1561,7 +1607,7 @@ async function logar() {
 
 const ABAS = ["dashboard", "pipeline", "conversas", "campanhas", "reunioes", "testar", "configuracoes"];
 // sub-telas que moram dentro de Configurações
-const SUBS_CFG = ["perfil", "config", "equipe", "whatsapp", "audios", "agenda", "telegram", "horarios", "cerebro", "manual", "assinatura", "admin"];
+const SUBS_CFG = ["perfil", "config", "equipe", "meta", "whatsapp", "audios", "agenda", "telegram", "horarios", "cerebro", "manual", "assinatura", "admin"];
 let abaAtual = "pipeline";
 
 function aba(nome) {
@@ -1617,6 +1663,7 @@ function subCfg(qual) {
   });
   if (qual === "equipe") renderEquipe();
   if (qual === "perfil") renderPerfil();
+  if (qual === "meta") carregarMeta();
   if (["config", "agenda", "horarios"].includes(qual)) carregarConfig();
   if (qual === "whatsapp") carregarWhats();
   if (qual === "audios") { carregarAudio(); carregarProntosCfg(); }
@@ -2551,7 +2598,8 @@ function cardLead(l) {
         ${previewMsg(l)}
         <div class="lc-tags">
           ${c.ia && emConversa ? (l.ia_pausada ? `<span class="tag quente">${ic("agente", 12)}humano</span>` : `<span class="tag verde">${ic("faisca", 12)}IA</span>`) : ""}
-          ${c.tags && l.tag_importacao ? `<span class="tag" title="${esc(l.tag_importacao)}" style="max-width:140px">${esc(l.tag_importacao)}</span>` : ""}
+          ${l.origem_tipo === "quente" ? `<span class="tag anuncio" title="Lead quente: chegou por anúncio da Meta">${ic("meta", 12)}Anúncio</span>` : ""}
+          ${c.tags && l.tag_importacao && l.tag_importacao !== "Anúncio Meta" ? `<span class="tag" title="${esc(l.tag_importacao)}" style="max-width:140px">${esc(l.tag_importacao)}</span>` : ""}
           ${c.tags && l.nicho ? `<span class="tag" style="max-width:110px">${esc(l.nicho)}</span>` : ""}
           ${c.valor && Number(l.valor_venda) ? `<span class="lc-valor">${money(l.valor_venda)}</span>` : ""}
           ${c.data && dataMov ? `<span class="lc-data">${dataMov}</span>` : ""}
@@ -2741,6 +2789,195 @@ function salvarPerfil() {
   salvarPrefs({ avatar: pfSel, apelido: apelido === eu?.nome ? null : apelido });
   renderSbPerfil();
   toast("Perfil salvo", "checkq");
+}
+
+// ============================================================
+// INTEGRACOES > META ADS (API de Conversoes)
+// Conexao (pixel + token), leads de anuncio (quentes), funil -> evento e
+// o historico do que foi devolvido pra Meta. O token nunca volta do servidor.
+// ============================================================
+let metaDados = null, metaMapa = {}, metaPipe = null;
+const SUGESTAO_META = (e) => e.e_perdido || e.chave === "perdido" ? "LeadDesqualificado"
+  : e.e_ganho || e.chave === "ganho" ? "Purchase"
+  : e.chave === "reuniao" ? "Schedule"
+  : e.chave === "decisor" ? "LeadQualificado"
+  : ["respondeu", "em_conversa", "conectou"].includes(e.chave) ? "Contact"
+  : e.e_entrada ? "Lead" : "";
+async function carregarMeta() {
+  const [d] = await Promise.all([api("/api/meta"), pipelines?.length ? null : carregarPipelines().catch(() => null)]);
+  if (!d || d.erro) { $("#meta-corpo").innerHTML = `<div class="card caixa">${esc(d?.erro || "Sem permissão para ver esta integração.")}</div>`; return; }
+  metaDados = d; metaMapa = { ...(d.mapa || {}) };
+  if (!metaPipe || !pipelines.find((p) => p.id === metaPipe)) metaPipe = pipelines[0]?.id || null;
+  renderMeta();
+}
+function renderMeta() {
+  const d = metaDados, r = d.resumo || {};
+  const st = d.ativo && d.pronta ? ["ok", "Enviando eventos"] : d.pronta ? ["aviso", "Configurado, desligado"] : ["off", "Não configurado"];
+  const dot = $("#cfg-meta-dot"); if (dot) dot.innerHTML = d.ativo && d.pronta ? `<span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#0866ff"></span>` : "";
+  const opcoesFunil = pipelines.map((p) => `<option value="${p.id}" ${d.funil_anuncio === p.id ? "selected" : ""}>${esc(p.nome)}</option>`).join("");
+  $("#meta-corpo").innerHTML = `
+    <div class="card meta-hero">
+      <span class="meta-logo">${ic("meta", 30)}</span>
+      <div style="flex:1; min-width:220px">
+        <h3>API de Conversões</h3>
+        <p>Quando um card muda de coluna (você arrastando ou a IA atendendo), o Prospecta avisa a Meta. Ela aprende quem vira cliente e quem é desqualificado, e passa a entregar seus anúncios para pessoas parecidas com quem compra.</p>
+      </div>
+      <div style="display:flex; flex-direction:column; align-items:flex-end; gap:10px">
+        <span class="meta-st ${st[0]}">${st[1]}</span>
+        <label style="display:flex; align-items:center; gap:8px; font-size:13px; font-weight:600; cursor:pointer">Ligado
+          <span class="sw ${d.ativo ? "on" : ""}" onclick="ligarMeta(${d.ativo ? "false" : "true"})"></span></label>
+      </div>
+    </div>
+    <div class="meta-nums">
+      <div class="meta-num"><b>${r.enviados7 || 0}</b><span>eventos enviados em 7 dias</span></div>
+      <div class="meta-num"><b>${r.quentes || 0}</b><span>leads quentes (de anúncio)</span></div>
+      <div class="meta-num"><b>${r.desqualificados || 0}</b><span>desqualificados devolvidos</span></div>
+      <div class="meta-num"><b style="${r.erros ? "color:var(--vermelho)" : ""}">${r.erros || 0}</b><span>com erro${r.pendentes ? ` · ${r.pendentes} na fila` : ""}</span></div>
+    </div>
+
+    <div class="card caixa">
+      <h3>Conexão com a Meta</h3>
+      <div class="meta-campos">
+        <div><label for="meta-pixel">ID do Pixel (conjunto de dados)</label>
+          <input id="meta-pixel" inputmode="numeric" placeholder="Ex.: 1234567890123456" value="${esc(d.pixel || "")}">
+          <div class="dica">Gerenciador de Eventos > Fontes de dados > seu pixel. O número aparece embaixo do nome.</div></div>
+        <div><label for="meta-token">Token de acesso da API de Conversões</label>
+          <input id="meta-token" type="password" autocomplete="off" placeholder="${d.token_final ? `Salvo (termina em ${esc(d.token_final)}). Cole um novo para trocar` : "Cole aqui o token gerado na Meta"}">
+          <div class="dica">${d.token_final ? `<a href="#" style="color:var(--vermelho)" onclick="event.preventDefault(); apagarTokenMeta()">Apagar token salvo</a>` : "Fica guardado só no servidor. Ninguém consegue ver depois de salvo."}</div></div>
+        <div><label for="meta-teste">Código de evento de teste <span class="muted" style="font-weight:400">(opcional)</span></label>
+          <input id="meta-teste" placeholder="Ex.: TEST12345" value="${esc(d.teste || "")}">
+          <div class="dica">Com ele preenchido, os eventos vão para a aba "Eventos de teste" e não contam na campanha. Apague quando terminar de testar.</div></div>
+        <div><label for="meta-waba">ID da conta do WhatsApp Business <span class="muted" style="font-weight:400">(opcional)</span></label>
+          <input id="meta-waba" inputmode="numeric" placeholder="Ex.: 102938475610293" value="${esc(d.waba || "")}">
+          <div class="dica">Para anúncios de clique para o WhatsApp: liga o evento ao clique exato do anúncio.</div></div>
+      </div>
+      <details style="margin-top:14px"><summary style="cursor:pointer; font-size:13px; font-weight:600">Onde eu acho isso na Meta?</summary>
+        <ol class="meta-passos" style="margin-top:10px">
+          <li>Abra o <b>Gerenciador de Eventos</b> da Meta (business.facebook.com/events_manager).</li>
+          <li>Em <b>Fontes de dados</b>, escolha o pixel que suas campanhas usam e copie o <b>ID</b>.</li>
+          <li>Vá em <b>Configurações</b> > <b>API de Conversões</b> > <b>Gerar token de acesso</b> e cole o token aqui.</li>
+          <li>Para testar: aba <b>Eventos de teste</b>, copie o código <b>TEST...</b>, cole acima e clique em Testar conexão.</li>
+        </ol></details>
+      <div style="display:flex; gap:8px; margin-top:16px; flex-wrap:wrap; align-items:center">
+        <button class="btn" onclick="salvarMeta()">${ic("checkq", 15)}Salvar</button>
+        <button class="btn sec" onclick="testarMeta(this)">${ic("raio", 15)}Testar conexão</button>
+        <span id="meta-teste-res" style="font-size:12.5px"></span>
+      </div>
+    </div>
+
+    <div class="card caixa">
+      <h3>Leads de anúncio (quentes)</h3>
+      <p class="muted" style="font-size:13px; margin:-4px 0 14px">Quem chama no WhatsApp por um anúncio de clique para o WhatsApp entra no Prospecta como lead quente, com o selo Anúncio no cartão. Os leads das listas importadas são frios.</p>
+      <div class="meta-campos">
+        <div><label for="meta-funil">Funil onde os leads de anúncio entram</label>
+          <select id="meta-funil"><option value="">Não criar leads de anúncio</option>${opcoesFunil}</select>
+          <div class="dica">Entram na primeira coluna desse funil.</div></div>
+        <div><label for="meta-quais">Devolver eventos para a Meta de</label>
+          <select id="meta-quais"><option value="quentes" ${d.quais === "quentes" ? "selected" : ""}>Só leads de anúncio (recomendado)</option>
+            <option value="todos" ${d.quais === "todos" ? "selected" : ""}>Todos os leads, inclusive listas frias</option></select>
+          <div class="dica">Listas frias não vieram de anúncio, então só ajudam a Meta a montar públicos.</div></div>
+      </div>
+      <label style="display:flex; align-items:center; gap:10px; margin-top:14px; font-size:13.5px; cursor:pointer">
+        <span class="sw ${d.ia_anuncio ? "on" : ""}" id="meta-ia" onclick="this.classList.toggle('on')"></span>A IA já atende os leads de anúncio assim que eles chamam</label>
+    </div>
+
+    <div class="card caixa">
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap">
+        <h3 style="margin:0">Funil e eventos</h3>
+        <div style="display:flex; gap:8px; align-items:center">
+          <select id="meta-pipe" onchange="metaPipe = Number(this.value); renderMapaMeta()">${pipelines.map((p) => `<option value="${p.id}" ${p.id === metaPipe ? "selected" : ""}>${esc(p.nome)}</option>`).join("")}</select>
+          <button class="btn sec mini" onclick="sugerirMapaMeta()">${ic("faisca", 13)}Usar sugestão</button>
+        </div>
+      </div>
+      <p class="muted" style="font-size:13px; margin:8px 0 12px">Escolha o que a Meta fica sabendo quando um lead entra em cada coluna. Vale para quando você move o card e para quando a IA move (por exemplo, ao marcar reunião ou desqualificar). Cada evento é enviado uma vez por lead.</p>
+      <div class="meta-mapa" id="meta-mapa"></div>
+      <div class="nota-box" style="margin-top:12px; font-size:12.5px">${ic("alvo", 14)} <b>Lead desqualificado</b> é o sinal que faz a Meta parar de buscar pessoas sem perfil. Ligue na coluna de perdidos ou desqualificados.</div>
+      <div style="margin-top:14px"><button class="btn" onclick="salvarMeta()">${ic("checkq", 15)}Salvar funil</button></div>
+    </div>
+
+    <div class="card caixa">
+      <div style="display:flex; justify-content:space-between; align-items:center"><h3 style="margin:0">Últimos envios</h3>
+        <button class="btn ghost mini" onclick="carregarMeta()">${ic("refresh", 13)}Atualizar</button></div>
+      ${(d.ultimos || []).length ? `<div style="overflow-x:auto; margin-top:10px"><table class="tbl"><thead><tr><th>Quando</th><th>Lead</th><th>Evento</th><th>Coluna</th><th>Quem moveu</th><th>Status</th><th></th></tr></thead><tbody>
+        ${d.ultimos.map((e) => `<tr>
+          <td class="muted" style="white-space:nowrap">${esc(dataHoraSP(e.criado_em))}</td>
+          <td><a href="#" onclick="event.preventDefault(); abrirLeadNoCRM(${Number(e.lead_id)})">${esc(e.nome_clinica || "lead excluído")}</a>${e.quente ? ` <span class="tag anuncio" style="font-size:10.5px">Anúncio</span>` : ""}</td>
+          <td><b>${esc(rotuloEventoMeta(e.evento))}</b></td>
+          <td class="muted">${esc(e.etapa || "-")}</td>
+          <td class="muted">${esc(e.origem || "-")}</td>
+          <td><span class="ev-st ${esc(e.status)}" title="${esc(e.resposta || "")}">${esc({ enviado: "enviado", erro: `erro (${e.tentativas}x)`, pendente: "na fila", ignorado: "ignorado" }[e.status] || e.status)}</span></td>
+          <td>${e.status === "erro" || e.status === "ignorado" ? `<button class="btn ghost mini" onclick="reenviarMeta(${Number(e.id)})">Reenviar</button>` : ""}</td></tr>`).join("")}
+      </tbody></table></div>` : `<p class="muted" style="font-size:13px; margin-top:10px">Nenhum evento ainda. Depois de ligar, mova um card para uma coluna com evento e ele aparece aqui em até 20 segundos.</p>`}
+    </div>`;
+  renderMapaMeta();
+}
+const rotuloEventoMeta = (id) => metaDados?.eventos?.find((e) => e.id === id)?.rot || id;
+function renderMapaMeta() {
+  const p = pipelines.find((x) => x.id === metaPipe);
+  const box = $("#meta-mapa"); if (!box) return;
+  if (!p) { box.innerHTML = `<p class="muted">Nenhum funil criado ainda.</p>`; return; }
+  const evs = metaDados.eventos || [];
+  box.innerHTML = (p.etapas || []).map((e) => {
+    const atual = metaMapa[e.id] || "";
+    const conhecido = !atual || evs.some((x) => x.id === atual);
+    const desc = evs.find((x) => x.id === atual)?.desc || (atual ? "Evento personalizado" : "Não avisa a Meta");
+    return `<div class="meta-linha ${atual === "LeadDesqualificado" ? "desq" : ""}">
+      <div class="et"><i style="background:${corEtapa(e)}"></i>${esc(e.nome)}</div>
+      <div class="sel"><select onchange="mudouEventoMeta(${e.id}, this.value)">
+        <option value="">Não enviar</option>
+        ${evs.map((x) => `<option value="${x.id}" ${atual === x.id ? "selected" : ""}>${esc(x.rot)}</option>`).join("")}
+        <option value="__outro" ${!conhecido ? "selected" : ""}>Outro (digitar nome)</option></select>
+        ${!conhecido ? `<input value="${esc(atual)}" maxlength="40" placeholder="NomeDoEvento" oninput="metaMapa[${e.id}] = this.value.replace(/[^A-Za-z0-9_]/g, '')">` : ""}</div>
+      <div class="desc">${esc(desc)}</div></div>`;
+  }).join("");
+}
+function mudouEventoMeta(etapaId, v) {
+  if (v === "__outro") metaMapa[etapaId] = "EventoPersonalizado";
+  else if (v) metaMapa[etapaId] = v; else delete metaMapa[etapaId];
+  renderMapaMeta();
+}
+function sugerirMapaMeta() {
+  const p = pipelines.find((x) => x.id === metaPipe); if (!p) return;
+  (p.etapas || []).forEach((e) => { const s = SUGESTAO_META(e); if (s) metaMapa[e.id] = s; else delete metaMapa[e.id]; });
+  renderMapaMeta();
+  toast("Sugestão aplicada. Confira e clique em Salvar funil", "faisca");
+}
+async function salvarMeta() {
+  const corpo = {
+    pixel: $("#meta-pixel").value.trim(), teste: $("#meta-teste").value.trim(), waba: $("#meta-waba").value.trim(),
+    quais: $("#meta-quais").value, funil_anuncio: $("#meta-funil").value || "", ia_anuncio: $("#meta-ia").classList.contains("on"),
+    mapa: metaMapa,
+  };
+  const tok = $("#meta-token").value.trim(); if (tok) corpo.token = tok;
+  const r = await api("/api/meta", { method: "POST", body: JSON.stringify(corpo) });
+  if (r?.erro) return toast(r.erro, "alerta");
+  toast("Integração com a Meta salva", "checkq");
+  carregarMeta();
+}
+async function ligarMeta(on) {
+  const r = await api("/api/meta", { method: "POST", body: JSON.stringify({ ativo: on }) });
+  if (r?.erro) return toast(r.erro, "alerta");
+  toast(on ? "Meta ligada: eventos começam a ser enviados" : "Meta desligada", "meta");
+  carregarMeta();
+}
+async function apagarTokenMeta() {
+  if (!confirm("Apagar o token salvo? A integração para de enviar até você colar um novo.")) return;
+  await api("/api/meta", { method: "POST", body: JSON.stringify({ apagar_token: true, ativo: false }) });
+  carregarMeta();
+}
+async function testarMeta(btn) {
+  btn.disabled = true;
+  const out = $("#meta-teste-res"); out.innerHTML = `<span class="muted">Testando...</span>`;
+  const r = await api("/api/meta/testar", { method: "POST" }).catch((e) => ({ ok: false, erro: e.message }));
+  btn.disabled = false;
+  out.innerHTML = r.ok
+    ? `<span style="color:var(--verde); font-weight:600">Conectado${r.nome ? ` ao pixel "${esc(r.nome)}"` : ""}.</span>${r.teste ? ` <span class="muted">${esc(r.teste)}</span>` : ""}`
+    : `<span style="color:var(--vermelho); font-weight:600">Não conectou: ${esc(r.erro || "erro desconhecido")}</span>`;
+}
+async function reenviarMeta(id) {
+  await api(`/api/meta/reenviar/${Number(id)}`, { method: "POST" });
+  toast("Vai ser reenviado em até 20 segundos", "refresh");
+  carregarMeta();
 }
 
 async function carregarEu() {
@@ -3563,6 +3800,7 @@ const ICONES = {
   layout: `<rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M3 9h18M9.5 9v11"/>`,
   ordenar: `<path d="M7 4v16M3.5 16.5L7 20l3.5-3.5M14 6h7M14 12h5M14 18h3"/>`,
   duplicar: `<rect x="8" y="8" width="12.5" height="12.5" rx="2.5"/><path d="M16 8V5.5A2 2 0 0 0 14 3.5H5.5a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2H8"/>`,
+  meta: `<path d="M2.6 15.2c0-4.6 2.3-8.4 5-8.4 2.4 0 4.2 2.7 6.4 6.4 1.7 2.9 2.9 4.2 4.3 4.2 1.7 0 3.1-1.7 3.1-4.4 0-3.6-1.8-6.2-4.2-6.2-2 0-3.6 2-5.4 5.1-2 3.5-3.4 5.5-5.6 5.5-2.2 0-3.6-1.4-3.6-2.2z"/>`,
   checkq: `<rect x="3.5" y="3.5" width="17" height="17" rx="4"/><path d="M8 12.2l2.8 2.8L16.2 9"/>`,
   alvo: `<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r=".8" fill="currentColor"/>`,
   raio: `<path d="M13 2.5L4.5 13.5H12l-1 8 8.5-11H12z"/>`,

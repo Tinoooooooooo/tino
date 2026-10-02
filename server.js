@@ -36,6 +36,10 @@ import { responderLead, horariosDisponiveis } from "./lib/agente.js";
 import { transcreverAudioMensagem } from "./lib/transcrever.js";
 import { alertar } from "./lib/telegram.js";
 import { iniciarWorker } from "./worker.js";
+import {
+  iniciarMeta, configMeta, metaPronta, salvarConfigMeta, testarConexaoMeta, resumoMeta, ultimosEventosMeta,
+  reenviarEvento, infoAnuncio, marcarLeadQuente, EVENTOS_META,
+} from "./lib/meta.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT || 8795);
@@ -217,6 +221,12 @@ app.post("/webhook", async (req, res) => {
     const instChegada = getInstanciaPorToken(req.body?.token || req.body?.instance || null) || null;
 
     let lead = getLeadPorTelefone(m.telefone);
+    // ANUNCIO DA META (clique pro WhatsApp): quem ja e lead vira "quente"; numero
+    // novo vira lead quente no funil escolhido em Integracoes > Meta Ads. Mensagem
+    // que NAO vem de anuncio segue a regra de sempre (nao-lead e ignorado).
+    const anuncio = !m.fromMe ? infoAnuncio(req.body) : null;
+    if (anuncio && lead) marcarLeadQuente(lead.id, anuncio);
+    else if (anuncio && !threadPorTelefone(m.telefone, instChegada?.id || null)) lead = criarLeadDeAnuncio(m.telefone, anuncio, req.body, instChegada);
     // THREAD paralela (decisor): o numero nao e o principal de nenhum lead, mas
     // pertence a uma conversa aberta dentro de um card. Sem isso a resposta do
     // decisor era DESCARTADA como "nao e lead" e nunca chegava no painel.
@@ -2369,6 +2379,43 @@ app.get("/api/lead/:id/foto", async (req, res) => {
   }
 });
 
+// ============================================================
+// INTEGRACOES > META ADS (API de Conversoes). Logica em lib/meta.js.
+// O token nunca volta pro navegador: so os 4 ultimos caracteres.
+// ============================================================
+function criarLeadDeAnuncio(telefone, anuncio, body, inst) {
+  const cfg = configMeta();
+  const funil = cfg.funilAnuncio ? getPipeline(cfg.funilAnuncio) : null;
+  const entrada = funil ? etapaDeEntrada(funil.id) : null;
+  if (!entrada) { console.log("[meta] lead de anúncio ignorado: escolha o funil em Integrações > Meta Ads"); return null; }
+  const msg = body?.message || body?.data?.message || body || {};
+  const nome = String(msg.senderName || msg.pushName || body?.chat?.name || "").trim().slice(0, 80) || "Lead de anúncio";
+  const id = upsertLead({ nome_clinica: nome, telefone, origem_lista: "Anúncio Meta" });
+  if (!id) return null;
+  marcarLeadQuente(id, anuncio);
+  db.prepare(`UPDATE leads SET pipeline_id = ?, etapa_id = ?, status = 'respondeu', tag_importacao = 'Anúncio Meta',
+    instancia_id = COALESCE(?, instancia_id), usuario_id = COALESCE(?, usuario_id), ia_pausada = ?, atualizado_em = datetime('now') WHERE id = ?`)
+    .run(funil.id, entrada.id, inst?.id || null, funil.usuario_id || null, cfg.iaAnuncio ? 0 : 1, id);
+  registrarEvento(id, "anuncio", anuncio.titulo ? `chegou pelo anúncio: ${anuncio.titulo}` : "chegou por anúncio da Meta");
+  return getLead(id);
+}
+app.get("/api/meta", auth, exige("editar_campanha"), (req, res) => {
+  const c = configMeta();
+  res.json({
+    ativo: c.ativo, pronta: metaPronta(c), pixel: c.pixel, teste: c.teste, waba: c.waba, quais: c.quais,
+    funil_anuncio: c.funilAnuncio, ia_anuncio: c.iaAnuncio, mapa: c.mapa,
+    token_final: c.token ? c.token.slice(-4) : null,
+    eventos: EVENTOS_META, resumo: resumoMeta(), ultimos: ultimosEventosMeta(40),
+  });
+});
+app.post("/api/meta", auth, exige("editar_campanha"), (req, res) => {
+  const erros = salvarConfigMeta(req.body || {});
+  if (erros.length) return res.status(400).json({ erro: erros.join(" · ") });
+  res.json({ ok: true });
+});
+app.post("/api/meta/testar", auth, exige("editar_campanha"), async (req, res) => res.json(await testarConexaoMeta()));
+app.post("/api/meta/reenviar/:id", auth, exige("editar_campanha"), (req, res) => res.json({ ok: reenviarEvento(req.params.id) > 0 }));
+
 app.get("/api/dashboard", auth, (req, res) => {
   // periodo em DIAS CIVIS de SP: ?de=AAAA-MM-DD&ate=AAAA-MM-DD (ou ?dias=N/hoje)
   const J = janelaDash(req);
@@ -2874,4 +2921,5 @@ app.get("/api/erros", (req, res) => {
 app.listen(PORT, process.env.BIND_HOST || "127.0.0.1", () => {
   console.log(`[sdr] servidor na porta ${PORT}`);
   iniciarWorker();
+  iniciarMeta(); // eventos do funil -> API de Conversoes da Meta
 });
