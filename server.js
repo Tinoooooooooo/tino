@@ -224,9 +224,15 @@ app.post("/webhook", async (req, res) => {
     // ANUNCIO DA META (clique pro WhatsApp): quem ja e lead vira "quente"; numero
     // novo vira lead quente no funil escolhido em Integracoes > Meta Ads. Mensagem
     // que NAO vem de anuncio segue a regra de sempre (nao-lead e ignorado).
+    // RECEBER CONTATOS NOVOS (Integracoes > WhatsApp, por numero): quem chama
+    // primeiro nesse chip vira lead quente no funil escolhido. Desligado (padrao)
+    // = regra antiga, porque varios chips sao o numero pessoal da equipe.
     const anuncio = !m.fromMe ? infoAnuncio(req.body) : null;
     if (anuncio && lead) marcarLeadQuente(lead.id, anuncio);
-    else if (anuncio && !threadPorTelefone(m.telefone, instChegada?.id || null)) lead = criarLeadDeAnuncio(m.telefone, anuncio, req.body, instChegada);
+    else if (!lead && !m.fromMe && !threadPorTelefone(m.telefone, instChegada?.id || null)) {
+      if (anuncio) lead = criarLeadDeAnuncio(m.telefone, anuncio, req.body, instChegada);
+      if (!lead && instChegada?.receber_novos) lead = criarLeadDeEntrada(m.telefone, req.body, instChegada, anuncio);
+    }
     // THREAD paralela (decisor): o numero nao e o principal de nenhum lead, mas
     // pertence a uma conversa aberta dentro de um card. Sem isso a resposta do
     // decisor era DESCARTADA como "nao e lead" e nunca chegava no painel.
@@ -1206,6 +1212,14 @@ app.patch("/api/instancias", auth, (req, res) => {
   // de quem é o número (null = da empresa)
   if (req.body.usuario_id !== undefined) campos.usuario_id = req.body.usuario_id ? Number(req.body.usuario_id) : null;
   if (req.body.pipeline_id !== undefined) campos.pipeline_id = req.body.pipeline_id ? Number(req.body.pipeline_id) : null;
+  // receber contatos novos (quem chama primeiro vira lead)
+  if (["receber_novos", "funil_novos", "ia_novos"].some((k) => req.body[k] !== undefined) && !pode(req.usuario, "conectar_whatsapp"))
+    return res.status(403).json({ erro: "seu papel não pode mudar isso" });
+  if (req.body.receber_novos !== undefined) campos.receber_novos = req.body.receber_novos ? 1 : 0;
+  if (req.body.funil_novos !== undefined) campos.funil_novos = req.body.funil_novos ? Number(req.body.funil_novos) : null;
+  if (req.body.ia_novos !== undefined) campos.ia_novos = req.body.ia_novos ? 1 : 0;
+  if (campos.receber_novos && !getPipeline(campos.funil_novos ?? inst.funil_novos ?? inst.pipeline_id ?? 0))
+    return res.status(400).json({ erro: "escolha o funil onde os contatos novos vão entrar" });
   atualizarInstancia(inst.id, campos);
   // espelha o vínculo na pipeline (o personalizador e o worker leem dos dois lados)
   if (campos.pipeline_id !== undefined) {
@@ -2383,6 +2397,29 @@ app.get("/api/lead/:id/foto", async (req, res) => {
 // INTEGRACOES > META ADS (API de Conversoes). Logica em lib/meta.js.
 // O token nunca volta pro navegador: so os 4 ultimos caracteres.
 // ============================================================
+// contato novo que chamou num chip com "Receber contatos novos" ligado
+function criarLeadDeEntrada(telefone, body, inst, anuncio = null) {
+  if (naBlocklist(telefone)) return null;
+  // chip falando com outro chip nosso nao e lead
+  const nossos = listarInstancias().map((i) => String(i.numero || "").replace(/\D/g, "")).filter(Boolean);
+  if (nossos.some((n) => variantesTelefone(n).includes(telefone) || variantesTelefone(telefone).includes(n))) return null;
+  const funil = getPipeline(inst.funil_novos || inst.pipeline_id || 0);
+  const entrada = funil ? etapaDeEntrada(funil.id) : null;
+  if (!entrada) { console.log(`[entrada] contato novo em ${inst.nome} ignorado: escolha o funil em Integrações > WhatsApp`); return null; }
+  const msg = body?.message || body?.data?.message || body || {};
+  const nome = String(msg.senderName || msg.pushName || body?.chat?.name || "").trim().slice(0, 80) || "Novo contato";
+  const id = upsertLead({ nome_clinica: nome, telefone, origem_lista: "Entrou em contato" });
+  if (!id) return null;
+  const iaLigada = inst.ia_novos !== 0;
+  db.prepare(`UPDATE leads SET pipeline_id = ?, etapa_id = ?, status = 'respondeu', tag_importacao = 'Entrou em contato',
+    origem_tipo = 'quente', instancia_id = ?, usuario_id = COALESCE(?, ?, usuario_id), ia_pausada = ?, aguardando_humano = ?,
+    atualizado_em = datetime('now') WHERE id = ?`)
+    .run(funil.id, entrada.id, inst.id, inst.usuario_id || null, funil.usuario_id || null, iaLigada ? 0 : 1, iaLigada ? 0 : 1, id);
+  if (anuncio) marcarLeadQuente(id, anuncio);
+  registrarEvento(id, "entrada", `chamou no WhatsApp ${inst.nome}${anuncio ? " (veio de anúncio)" : ""}`);
+  if (!iaLigada) Promise.resolve().then(() => alertar(`Novo contato no WhatsApp ${inst.nome}: ${nome} (${telefone}). Está esperando alguém responder.`, { usuarioId: inst.usuario_id || funil.usuario_id || null })).catch(() => {});
+  return getLead(id);
+}
 function criarLeadDeAnuncio(telefone, anuncio, body, inst) {
   const cfg = configMeta();
   const funil = cfg.funilAnuncio ? getPipeline(cfg.funilAnuncio) : null;

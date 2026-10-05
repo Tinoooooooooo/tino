@@ -178,6 +178,13 @@
   .pf-salvar .ic { transition:transform .2s; } .pf-salvar:hover .ic { transform:translateX(3px); }
   @media (max-width:760px){ .sb-perfil { margin-top:0; border-top:0; border-left:1px solid var(--border); padding:6px 10px; width:auto; }
     .sb-perfil .nm, .pf-curva { display:none; } .pf-menu { transform-origin:top right; } }
+  /* contatos novos por numero (Integracoes > WhatsApp) */
+  .wa-entrada { border-top:1px solid var(--border); padding-top:12px; }
+  .wa-entrada-h { display:flex; align-items:flex-start; gap:10px; cursor:pointer; }
+  .wa-entrada-h > span:last-child { display:flex; flex-direction:column; gap:2px; font-size:13px; }
+  .wa-entrada-h .muted { font-size:12px; }
+  .wa-entrada .opcoes { margin-top:10px; grid-template-columns:auto minmax(0,1fr); }
+  .wa-entrada .opcoes select { width:100%; min-width:0; }
   /* ===== INTEGRACOES > META ADS ===== */
   .meta-hero { display:flex; gap:16px; align-items:center; padding:20px 22px; flex-wrap:wrap;
     background:linear-gradient(135deg, color-mix(in srgb, #0866ff 20%, var(--surface)), color-mix(in srgb, #0866ff 5%, var(--surface))); }
@@ -2598,8 +2605,8 @@ function cardLead(l) {
         ${previewMsg(l)}
         <div class="lc-tags">
           ${c.ia && emConversa ? (l.ia_pausada ? `<span class="tag quente">${ic("agente", 12)}humano</span>` : `<span class="tag verde">${ic("faisca", 12)}IA</span>`) : ""}
-          ${l.origem_tipo === "quente" ? `<span class="tag anuncio" title="Lead quente: chegou por anúncio da Meta">${ic("meta", 12)}Anúncio</span>` : ""}
-          ${c.tags && l.tag_importacao && l.tag_importacao !== "Anúncio Meta" ? `<span class="tag" title="${esc(l.tag_importacao)}" style="max-width:140px">${esc(l.tag_importacao)}</span>` : ""}
+          ${l.origem_tipo === "quente" ? (l.anuncio_info ? `<span class="tag anuncio" title="Lead quente: chegou por anúncio da Meta">${ic("meta", 12)}Anúncio</span>` : `<span class="tag verde" title="Lead quente: chamou primeiro no WhatsApp">${ic("chat", 12)}Chamou</span>`) : ""}
+          ${c.tags && l.tag_importacao && !["Anúncio Meta", "Entrou em contato"].includes(l.tag_importacao) ? `<span class="tag" title="${esc(l.tag_importacao)}" style="max-width:140px">${esc(l.tag_importacao)}</span>` : ""}
           ${c.tags && l.nicho ? `<span class="tag" style="max-width:110px">${esc(l.nicho)}</span>` : ""}
           ${c.valor && Number(l.valor_venda) ? `<span class="lc-valor">${money(l.valor_venda)}</span>` : ""}
           ${c.data && dataMov ? `<span class="lc-data">${dataMov}</span>` : ""}
@@ -2830,7 +2837,7 @@ function renderMeta() {
     </div>
     <div class="meta-nums">
       <div class="meta-num"><b>${r.enviados7 || 0}</b><span>eventos enviados em 7 dias</span></div>
-      <div class="meta-num"><b>${r.quentes || 0}</b><span>leads quentes (de anúncio)</span></div>
+      <div class="meta-num"><b>${r.quentes || 0}</b><span>leads quentes (chamaram vocês)</span></div>
       <div class="meta-num"><b>${r.desqualificados || 0}</b><span>desqualificados devolvidos</span></div>
       <div class="meta-num"><b style="${r.erros ? "color:var(--vermelho)" : ""}">${r.erros || 0}</b><span>com erro${r.pendentes ? ` · ${r.pendentes} na fila` : ""}</span></div>
     </div>
@@ -2873,7 +2880,7 @@ function renderMeta() {
           <select id="meta-funil"><option value="">Não criar leads de anúncio</option>${opcoesFunil}</select>
           <div class="dica">Entram na primeira coluna desse funil.</div></div>
         <div><label for="meta-quais">Devolver eventos para a Meta de</label>
-          <select id="meta-quais"><option value="quentes" ${d.quais === "quentes" ? "selected" : ""}>Só leads de anúncio (recomendado)</option>
+          <select id="meta-quais"><option value="quentes" ${d.quais === "quentes" ? "selected" : ""}>Só leads quentes: anúncio e quem chamou (recomendado)</option>
             <option value="todos" ${d.quais === "todos" ? "selected" : ""}>Todos os leads, inclusive listas frias</option></select>
           <div class="dica">Listas frias não vieram de anúncio, então só ajudam a Meta a montar públicos.</div></div>
       </div>
@@ -5976,7 +5983,9 @@ async function excluirAudio(uid) {
 }
 // WHATSAPPS: todos da empresa veem todos os números, cada um marcado de quem é
 async function carregarWhats() {
-  window.__pipesDisparo = (await api("/api/pipelines").catch(() => [])).filter?.((p) => p.tipo === "disparo") || [];
+  const todosFunis = await api("/api/pipelines").catch(() => []);
+  window.__pipesTodos = Array.isArray(todosFunis) ? todosFunis : [];
+  window.__pipesDisparo = window.__pipesTodos.filter((p) => p.tipo === "disparo");
   const d = await api("/api/instancias");
   const insts = d.instancias || [];
   const us = await api("/api/usuarios").catch(() => []);
@@ -6000,12 +6009,36 @@ async function carregarWhats() {
           ${(window.__pipesDisparo || []).map((p) => `<option value="${p.id}" ${i.pipeline_id === p.id ? "selected" : ""}>${esc(p.nome)}</option>`).join("")}</select>
         <span>Limite por dia</span><span style="display:flex; align-items:center; gap:6px"><input type="number" min="0" value="${i.cota_dia || 0}" onchange="setCota(${i.id}, this.value)" style="width:76px; padding:5px 8px" ${podeConectar ? "" : "disabled"}><span>0 = sem limite</span></span>
       </div>
+      <div class="wa-entrada ${i.receber_novos ? "on" : ""}">
+        <label class="wa-entrada-h"><span class="sw ${i.receber_novos ? "on" : ""}" ${podeConectar ? `onclick="setEntradaWhats(${i.id}, { receber_novos: ${i.receber_novos ? "false" : "true"} })"` : ""}></span>
+          <span><b>Receber contatos novos</b><span class="muted">Quem chamar primeiro neste número vira lead e a IA atende</span></span></label>
+        ${i.receber_novos ? `<div class="opcoes">
+          <span>Entram no funil</span><select onchange="setEntradaWhats(${i.id}, { funil_novos: this.value ? Number(this.value) : null })" ${podeConectar ? "" : "disabled"}>
+            ${(window.__pipesTodos || []).map((p) => `<option value="${p.id}" ${(i.funil_novos || i.pipeline_id) === p.id ? "selected" : ""}>${esc(p.nome)}</option>`).join("")}</select>
+          <span>Quem responde</span><select onchange="setEntradaWhats(${i.id}, { ia_novos: this.value === '1' })" ${podeConectar ? "" : "disabled"}>
+            <option value="1" ${i.ia_novos !== 0 ? "selected" : ""}>A IA, na hora</option>
+            <option value="0" ${i.ia_novos === 0 ? "selected" : ""}>A equipe</option></select>
+        </div>${i.ia_novos === 0 ? `<p class="muted" style="margin:6px 0 0; font-size:12px">A IA fica pausada nesses leads e o dono do número recebe um aviso no Telegram.</p>` : ""}` : `<p class="muted" style="margin:6px 0 0; font-size:12px">Desligado: só conversa com quem está nas suas listas. Deixe desligado em números pessoais.</p>`}
+      </div>
       ${podeConectar ? `<div style="display:flex; gap:6px">
         <button class="btn mini ${ok ? "sec" : "wa"}" onclick="pegarQR(${i.id})">${ic("qr", 14)}${ok ? "Reconectar" : "Conectar com QR Code"}</button>
         <button class="btn ghost mini" style="margin-left:auto; color:var(--vermelho)" onclick="removerWhats(${i.id})">${ic("lixeira", 14)}Remover</button></div>` : ""}
     </div>`; }).join("") + (podeConectar ? `<button class="wa-add" onclick="addWhats()"><span class="wa-marca">${ic("mais", 22)}</span><b>Adicionar WhatsApp</b><span class="muted" style="font-size:12.5px">Conecte pelo QR Code em 1 minuto</span></button>` : "");
   const totalCota = insts.reduce((a, i) => a + (i.cota_dia || 0), 0);
   $("#whats-msg").innerHTML = `${insts.length} de ${d.limite >= 99 ? "ilimitados" : d.limite} números` + (totalCota ? ` · ${totalCota} mensagens por dia somando os limites` : " · sem limite próprio, a rotação divide sozinha");
+}
+// RECEBER CONTATOS NOVOS: liga por numero e escolhe funil + quem responde
+async function setEntradaWhats(id, campos) {
+  const i = (await api("/api/instancias")).instancias?.find((x) => x.id === id);
+  if (campos.receber_novos && !campos.funil_novos && !i?.funil_novos && !i?.pipeline_id) {
+    const p = (window.__pipesTodos || [])[0];
+    if (!p) return toast("Crie um funil primeiro", "alerta");
+    campos.funil_novos = p.id;
+  }
+  const r = await api("/api/instancias", { method: "PATCH", body: JSON.stringify({ id, ...campos }) });
+  if (r?.erro) return toast(r.erro, "alerta");
+  if (campos.receber_novos !== undefined) toast(campos.receber_novos ? "Pronto: quem chamar neste número vira lead" : "Contatos novos desligados neste número", "whatsapp");
+  carregarWhats();
 }
 async function setCota(id, valor) {
   await api("/api/instancias", { method: "PATCH", body: JSON.stringify({ id, cota_dia: Number(valor) || 0 }) });
