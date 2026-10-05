@@ -174,6 +174,34 @@ app.get("/api/eu", auth, (req, res) => {
 // trocar a propria senha (dono via token mestre OU usuario da equipe).
 // No dono, grava painel_senha_hash no banco — a partir dai a env
 // PAINEL_SENHA_LOGIN(_HASH) do provisionamento deixa de valer (fallback so sem banco).
+// CONFIRMAR COM A PROPRIA SENHA antes de ligar algo sensivel (sincronizar
+// mensagens de contatos novos, mandar dados de lead pra Meta). Mesma regra do
+// login: dono confere a senha do painel, usuario da equipe confere a dele.
+// 5 erros em 15 min bloqueiam a confirmacao por 15 min.
+const errosSenha = new Map();
+function senhaConfere(req, senha) {
+  const chave = String(req.usuario?.id ?? "dono");
+  const reg = errosSenha.get(chave);
+  if (reg && reg.n >= 5 && Date.now() - reg.desde < 15 * 60_000) return { ok: false, erro: "muitas tentativas erradas. Espere 15 minutos." };
+  const s = String(senha || "");
+  const token = String(req.headers.authorization || "").replace(/^Bearer\s+/i, "");
+  let ok = false;
+  if (s) {
+    if (token === PAINEL_SENHA) {
+      const hashCfg = getConfig("painel_senha_hash", "");
+      ok = hashCfg ? sha(s) === hashCfg
+        : process.env.PAINEL_SENHA_LOGIN_HASH ? sha(s) === process.env.PAINEL_SENHA_LOGIN_HASH
+        : (process.env.PAINEL_SENHA_LOGIN ? s === process.env.PAINEL_SENHA_LOGIN : false);
+    }
+    // usuario da equipe (ou o admin que o acesso do dono representa): a senha dele
+    if (!ok && req.usuario?.id) ok = db.prepare("SELECT senha_hash FROM usuarios WHERE id = ?").get(req.usuario.id)?.senha_hash === sha(s);
+  }
+  if (ok) { errosSenha.delete(chave); return { ok: true }; }
+  const novo = reg && Date.now() - reg.desde < 15 * 60_000 ? { n: reg.n + 1, desde: reg.desde } : { n: 1, desde: Date.now() };
+  errosSenha.set(chave, novo);
+  return { ok: false, erro: s ? "senha errada" : "confirme com a sua senha" };
+}
+
 app.post("/api/senha", auth, (req, res) => {
   const { senha_atual, senha_nova } = req.body || {};
   if (String(senha_nova || "").length < 6) return res.status(422).json({ erro: "senha nova muito curta (mínimo 6 caracteres)" });
@@ -1216,11 +1244,19 @@ app.patch("/api/instancias", auth, (req, res) => {
   if (["receber_novos", "funil_novos", "ia_novos"].some((k) => req.body[k] !== undefined) && !pode(req.usuario, "conectar_whatsapp"))
     return res.status(403).json({ erro: "seu papel não pode mudar isso" });
   if (req.body.receber_novos !== undefined) campos.receber_novos = req.body.receber_novos ? 1 : 0;
+  // LIGAR a sincronizacao e decisao do cliente: so com a senha de quem esta logado
+  if (campos.receber_novos === 1 && !inst.receber_novos) {
+    const conf = senhaConfere(req, req.body.senha);
+    if (!conf.ok) return res.status(403).json({ erro: conf.erro, precisa_senha: true });
+  }
+  if (req.body.limite_novos_dia !== undefined) campos.limite_novos_dia = Math.min(500, Math.max(1, Math.round(Number(req.body.limite_novos_dia) || 30)));
   if (req.body.funil_novos !== undefined) campos.funil_novos = req.body.funil_novos ? Number(req.body.funil_novos) : null;
   if (req.body.ia_novos !== undefined) campos.ia_novos = req.body.ia_novos ? 1 : 0;
   if (campos.receber_novos && !getPipeline(campos.funil_novos ?? inst.funil_novos ?? inst.pipeline_id ?? 0))
     return res.status(400).json({ erro: "escolha o funil onde os contatos novos vão entrar" });
   atualizarInstancia(inst.id, campos);
+  if (campos.receber_novos !== undefined && campos.receber_novos !== (inst.receber_novos ? 1 : 0))
+    registrarEvento(null, "seguranca", `${req.usuario?.nome || "dono"} ${campos.receber_novos ? "LIGOU" : "desligou"} a sincronização de contatos novos no WhatsApp ${inst.nome}`);
   // espelha o vínculo na pipeline (o personalizador e o worker leem dos dois lados)
   if (campos.pipeline_id !== undefined) {
     db.prepare("UPDATE pipelines SET instancia_id = NULL WHERE instancia_id = ?").run(inst.id);
@@ -2406,6 +2442,20 @@ function criarLeadDeEntrada(telefone, body, inst, anuncio = null) {
   const funil = getPipeline(inst.funil_novos || inst.pipeline_id || 0);
   const entrada = funil ? etapaDeEntrada(funil.id) : null;
   if (!entrada) { console.log(`[entrada] contato novo em ${inst.nome} ignorado: escolha o funil em Integrações > WhatsApp`); return null; }
+  // TETO DIARIO por chip: disparo em massa pro numero do cliente nao vira
+  // centenas de leads (nem centenas de respostas da IA na conta de token dele)
+  const teto = Number(inst.limite_novos_dia) || 30;
+  const hoje = db.prepare(`SELECT COUNT(*) n FROM leads WHERE instancia_id = ? AND tag_importacao = 'Entrou em contato'
+    AND date(criado_em, '-3 hours') = date('now', '-3 hours')`).get(inst.id).n;
+  if (hoje >= teto) {
+    const chaveAviso = `teto_novos_${inst.id}`;
+    if (getConfig(chaveAviso, "") !== agoraSP().data) {
+      setConfig(chaveAviso, agoraSP().data);
+      Promise.resolve().then(() => alertar(`O WhatsApp ${inst.nome} chegou no limite de ${teto} contatos novos hoje. Os próximos ficam de fora até amanhã (dá pra aumentar em Integrações > WhatsApp).`, { usuarioId: inst.usuario_id || null })).catch(() => {});
+    }
+    console.log(`[entrada] ${inst.nome}: limite de ${teto} contatos novos/dia atingido, ${telefone} ignorado`);
+    return null;
+  }
   const msg = body?.message || body?.data?.message || body || {};
   const nome = String(msg.senderName || msg.pushName || body?.chat?.name || "").trim().slice(0, 80) || "Novo contato";
   const id = upsertLead({ nome_clinica: nome, telefone, origem_lista: "Entrou em contato" });
@@ -2446,7 +2496,17 @@ app.get("/api/meta", auth, exige("editar_campanha"), (req, res) => {
   });
 });
 app.post("/api/meta", auth, exige("editar_campanha"), (req, res) => {
-  const erros = salvarConfigMeta(req.body || {});
+  // mandar telefone de lead pra Meta e decisao do cliente: ligar a integracao
+  // ou abrir pra TODOS os leads (lista fria inclusa) pede a senha de quem esta logado
+  const atual = configMeta(), b = req.body || {};
+  const sensivel = (b.ativo === true && !atual.ativo) || (b.quais === "todos" && atual.quais !== "todos");
+  if (sensivel) {
+    const conf = senhaConfere(req, b.senha);
+    if (!conf.ok) return res.status(403).json({ erro: conf.erro, precisa_senha: true });
+    registrarEvento(null, "seguranca", `${req.usuario?.nome || "dono"} ${b.ativo === true && !atual.ativo ? "LIGOU a integração com a Meta" : "liberou TODOS os leads para a Meta"}`);
+  }
+  const { senha, ...semSenha } = b;
+  const erros = salvarConfigMeta(semSenha);
   if (erros.length) return res.status(400).json({ erro: erros.join(" · ") });
   res.json({ ok: true });
 });

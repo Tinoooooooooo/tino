@@ -2956,13 +2956,20 @@ async function salvarMeta() {
     mapa: metaMapa,
   };
   const tok = $("#meta-token").value.trim(); if (tok) corpo.token = tok;
-  const r = await api("/api/meta", { method: "POST", body: JSON.stringify(corpo) });
+  const r = await comSenha((senha) => api("/api/meta", { method: "POST", body: JSON.stringify({ ...corpo, ...(senha ? { senha } : {}) }) }),
+    "Enviar todos os leads para a Meta",
+    `Você escolheu devolver eventos de <b>todos os leads</b>, inclusive das listas frias importadas. ` + AVISO_SENHA_META);
+  if (!r) return;
   if (r?.erro) return toast(r.erro, "alerta");
   toast("Integração com a Meta salva", "checkq");
   carregarMeta();
 }
+const AVISO_SENHA_META = `Com a integração ligada, o Prospecta envia para a Meta o <b>telefone criptografado</b> (SHA-256) dos leads e a etapa do funil em que eles estão. Nome, e-mail e conversa não são enviados.
+  <p class="muted" style="margin:10px 0 0">Você é responsável por esses dados. Confirme que o seu cliente autorizou o uso para otimizar anúncios.</p>`;
 async function ligarMeta(on) {
-  const r = await api("/api/meta", { method: "POST", body: JSON.stringify({ ativo: on }) });
+  const r = await comSenha((senha) => api("/api/meta", { method: "POST", body: JSON.stringify({ ativo: on, ...(senha ? { senha } : {}) }) }),
+    "Ligar integração com a Meta", AVISO_SENHA_META);
+  if (!r) return;
   if (r?.erro) return toast(r.erro, "alerta");
   toast(on ? "Meta ligada: eventos começam a ser enviados" : "Meta desligada", "meta");
   carregarMeta();
@@ -6011,10 +6018,11 @@ async function carregarWhats() {
       </div>
       <div class="wa-entrada ${i.receber_novos ? "on" : ""}">
         <label class="wa-entrada-h"><span class="sw ${i.receber_novos ? "on" : ""}" ${podeConectar ? `onclick="setEntradaWhats(${i.id}, { receber_novos: ${i.receber_novos ? "false" : "true"} })"` : ""}></span>
-          <span><b>Receber contatos novos</b><span class="muted">Quem chamar primeiro neste número vira lead e a IA atende</span></span></label>
+          <span><b>Sincronizar mensagens de contatos novos</b><span class="muted">Quem chamar primeiro neste número vira lead (ex.: campanhas). Pede a sua senha para ativar</span></span></label>
         ${i.receber_novos ? `<div class="opcoes">
           <span>Entram no funil</span><select onchange="setEntradaWhats(${i.id}, { funil_novos: this.value ? Number(this.value) : null })" ${podeConectar ? "" : "disabled"}>
             ${(window.__pipesTodos || []).map((p) => `<option value="${p.id}" ${(i.funil_novos || i.pipeline_id) === p.id ? "selected" : ""}>${esc(p.nome)}</option>`).join("")}</select>
+          <span>Máximo por dia</span><span style="display:flex; align-items:center; gap:6px"><input type="number" min="1" max="500" value="${Number(i.limite_novos_dia) || 30}" onchange="setEntradaWhats(${i.id}, { limite_novos_dia: Number(this.value) || 30 })" style="width:76px; padding:5px 8px" ${podeConectar ? "" : "disabled"}><span>contatos novos</span></span>
           <span>Quem responde</span><select onchange="setEntradaWhats(${i.id}, { ia_novos: this.value === '1' })" ${podeConectar ? "" : "disabled"}>
             <option value="1" ${i.ia_novos !== 0 ? "selected" : ""}>A IA, na hora</option>
             <option value="0" ${i.ia_novos === 0 ? "selected" : ""}>A equipe</option></select>
@@ -6027,6 +6035,42 @@ async function carregarWhats() {
   const totalCota = insts.reduce((a, i) => a + (i.cota_dia || 0), 0);
   $("#whats-msg").innerHTML = `${insts.length} de ${d.limite >= 99 ? "ilimitados" : d.limite} números` + (totalCota ? ` · ${totalCota} mensagens por dia somando os limites` : " · sem limite próprio, a rotação divide sozinha");
 }
+// CONFIRMAR COM A SENHA: abre um modal e devolve a senha digitada (ou null).
+// Usado pra ligar o que manda dado pra fora ou abre a entrada de leads.
+function pedirSenha(titulo, explicacaoHtml) {
+  return new Promise((ok) => {
+    let respondeu = false;
+    const fim = (v) => { if (respondeu) return; respondeu = true; fecharModal(); ok(v); };
+    modal(esc(titulo), `
+      <div style="display:grid; gap:14px">
+        <div style="font-size:13.5px; line-height:1.55">${explicacaoHtml}</div>
+        <div><label for="conf-senha" style="display:block; font-size:12.5px; font-weight:600; margin-bottom:6px">Sua senha de acesso ao Prospecta</label>
+          <input id="conf-senha" type="password" autocomplete="current-password" style="width:100%" placeholder="Digite para confirmar"
+            onkeydown="if(event.key==='Enter'){event.preventDefault(); document.getElementById('conf-ok').click()}"></div>
+        <div style="display:flex; gap:8px; justify-content:flex-end">
+          <button class="btn sec" id="conf-cancelar">Cancelar</button>
+          <button class="btn" id="conf-ok">${ic("escudo", 15)}Confirmar e ativar</button>
+        </div>
+      </div>`, 480);
+    const bg = document.getElementById("modal-bg");
+    $("#conf-ok").onclick = () => { const v = $("#conf-senha").value; if (!v) return $("#conf-senha").focus(); fim(v); };
+    $("#conf-cancelar").onclick = () => fim(null);
+    // fechar pelo X, Esc ou clique fora = cancelar
+    new MutationObserver((_, obs) => { if (!document.body.contains(bg)) { obs.disconnect(); fim(null); } }).observe(document.body, { childList: true });
+    setTimeout(() => $("#conf-senha")?.focus(), 50);
+  });
+}
+// manda pro servidor e, se ele pedir senha (ou a senha estiver errada), pergunta de novo
+async function comSenha(fazer, titulo, explicacaoHtml) {
+  let r = await fazer(null);
+  while (r?.precisa_senha) {
+    const senha = await pedirSenha(titulo, (r.erro && r.erro !== "confirme com a sua senha" ? `<div class="nota-box" style="color:var(--vermelho); margin-bottom:10px">${esc(r.erro)}</div>` : "") + explicacaoHtml);
+    if (senha === null) return null;
+    r = await fazer(senha);
+  }
+  return r;
+}
+
 // RECEBER CONTATOS NOVOS: liga por numero e escolhe funil + quem responde
 async function setEntradaWhats(id, campos) {
   const i = (await api("/api/instancias")).instancias?.find((x) => x.id === id);
@@ -6035,8 +6079,16 @@ async function setEntradaWhats(id, campos) {
     if (!p) return toast("Crie um funil primeiro", "alerta");
     campos.funil_novos = p.id;
   }
-  const r = await api("/api/instancias", { method: "PATCH", body: JSON.stringify({ id, ...campos }) });
-  if (r?.erro) return toast(r.erro, "alerta");
+  const funilNome = (window.__pipesTodos || []).find((p) => p.id === (campos.funil_novos || i?.funil_novos || i?.pipeline_id))?.nome || "";
+  const r = await comSenha((senha) => api("/api/instancias", { method: "PATCH", body: JSON.stringify({ id, ...campos, ...(senha ? { senha } : {}) }) }),
+    "Ativar sincronização de mensagens",
+    `Ao ativar no número <b>${esc(i?.nome || "")}</b>, toda pessoa que mandar mensagem primeiro para ele vira lead${funilNome ? ` no funil <b>${esc(funilNome)}</b>` : ""} e ${i?.ia_novos === 0 ? "a equipe é avisada no Telegram" : "a IA responde na hora, usando a sua chave de IA"}.
+     <ul style="margin:10px 0 0; padding-left:18px; color:var(--muted)">
+       <li>Use num número de atendimento, não no seu WhatsApp pessoal.</li>
+       <li>No máximo <b>${Number(i?.limite_novos_dia) || 30}</b> contatos novos por dia neste número (dá pra mudar depois).</li>
+       <li>Dá para desligar a qualquer momento, sem senha.</li></ul>`);
+  if (!r) return;
+  if (r.erro) return toast(r.erro, "alerta");
   if (campos.receber_novos !== undefined) toast(campos.receber_novos ? "Pronto: quem chamar neste número vira lead" : "Contatos novos desligados neste número", "whatsapp");
   carregarWhats();
 }
