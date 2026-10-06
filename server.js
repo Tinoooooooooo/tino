@@ -36,6 +36,7 @@ import { responderLead, horariosDisponiveis } from "./lib/agente.js";
 import { transcreverAudioMensagem } from "./lib/transcrever.js";
 import { alertar } from "./lib/telegram.js";
 import { iniciarWorker } from "./worker.js";
+import { rotasAdmin } from "./lib/admin.js";
 import {
   iniciarMeta, configMeta, metaPronta, salvarConfigMeta, testarConexaoMeta, resumoMeta, ultimosEventosMeta,
   reenviarEvento, infoAnuncio, marcarLeadQuente, EVENTOS_META,
@@ -2875,52 +2876,14 @@ app.get("/api/assinatura", auth, (req, res) => {
 });
 
 // ============================================================
-// ADMIN (so funciona no SDR interno da VPS: le os containers dos clientes)
+// ADMIN (so no SDR interno da VPS e so pra papel admin). Tudo em lib/admin.js:
+// clientes, cobranca, usuarios de cada cliente, cofre de senhas, criar/cancelar.
 // ============================================================
-app.get("/api/admin/clientes", auth, async (req, res) => {
-  const { readdirSync, existsSync: ex, readFileSync: rf } = await import("node:fs");
-  const BASE = "/root/sdr-clientes";
-  if (!ex(BASE)) return res.status(404).json({ erro: "sem clientes aqui (rota exclusiva do interno)" });
-  const Database = (await import("better-sqlite3")).default;
-  const clientes = [];
-  for (const slug of readdirSync(BASE)) {
-    const dir = `${BASE}/${slug}`;
-    if (!ex(`${dir}/.env`)) continue;
-    const envTxt = rf(`${dir}/.env`, "utf8");
-    const pega = (k) => (envTxt.match(new RegExp(`^${k}=(.*)$`, "m")) || [])[1] || "";
-    const c = { slug, nome: pega("CLIENTE_NOME") || slug, email: pega("PAINEL_EMAIL"), url: pega("APP_URL"),
-      leads: 0, disparos: 0, respostas: 0, reunioes: 0, whats_conectados: 0, pausada: false, erro: null };
-    try {
-      const cdb = new Database(`${dir}/dados/sdr.db`, { readonly: true, fileMustExist: true });
-      c.leads = cdb.prepare("SELECT COUNT(*) c FROM leads WHERE eh_teste = 0").get().c;
-      c.disparos = cdb.prepare("SELECT COUNT(*) c FROM eventos WHERE tipo = 'disparo'").get().c;
-      c.respostas = cdb.prepare("SELECT COUNT(*) c FROM eventos WHERE tipo = 'resposta'").get().c;
-      c.reunioes = cdb.prepare("SELECT COUNT(*) c FROM eventos WHERE tipo = 'reuniao'").get().c;
-      try { c.whats_conectados = cdb.prepare("SELECT COUNT(*) c FROM instancias WHERE status = 'conectado'").get().c; } catch {}
-      try { c.pausada = cdb.prepare("SELECT valor FROM config WHERE chave = 'conta_pausada'").get()?.valor === "1"; } catch {}
-      cdb.close();
-    } catch (e) { c.erro = e.message.slice(0, 60); }
-    clientes.push(c);
-  }
-  res.json({ clientes, mrr_estimado: clientes.length * 100 });
-});
-
-// ENTRAR NA CONTA de um cliente (suporte/acompanhamento). Devolve a URL da API
-// e o token mestre daquele container pro painel trocar de sessao. So no interno
-// (esta pasta so existe na VPS) e so pra admin.
-app.post("/api/admin/entrar", auth, async (req, res) => {
+app.use("/api/admin", auth, (req, res, next) => {
+  if (MODO_IA === "api") return res.status(404).json({ erro: "rota exclusiva do interno" });
   if (req.usuario?.papel !== "admin") return res.status(403).json({ erro: "só admin" });
-  const { existsSync: ex, readFileSync: rf } = await import("node:fs");
-  const slug = String(req.body?.slug || "").replace(/[^a-z0-9-]/g, "");
-  const dir = `/root/sdr-clientes/${slug}`;
-  if (!slug || !ex(`${dir}/.env`)) return res.status(404).json({ erro: "cliente não encontrado" });
-  const envTxt = rf(`${dir}/.env`, "utf8");
-  const pega = (k) => (envTxt.match(new RegExp(`^${k}=(.*)$`, "m")) || [])[1] || "";
-  const url = pega("APP_URL"), token = pega("PAINEL_SENHA");
-  if (!url || !token) return res.status(500).json({ erro: "container sem APP_URL/PAINEL_SENHA" });
-  registrarEvento(null, "admin", `entrou na conta ${slug}`);
-  res.json({ ok: true, url, token, nome: pega("CLIENTE_NOME") || slug });
-});
+  next();
+}, rotasAdmin({ senhaConfere }));
 
 // ============================================================
 // MARCA (painel troca o nome conforme o deploy: interno vs cliente)

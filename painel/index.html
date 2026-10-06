@@ -225,6 +225,57 @@
   .ev-st.ignorado { color:var(--muted); background:var(--raise); }
   .tag.anuncio { color:#3b82f6; background:color-mix(in srgb, #0866ff 14%, transparent); }
   @media (max-width:900px){ .meta-campos, .meta-nums { grid-template-columns:1fr 1fr; } .meta-linha { grid-template-columns:1fr; } .meta-linha .desc { grid-column:1; } }
+  /* ===== ADMIN (dono) ===== */
+  .adm-kpis { display:grid; grid-template-columns:repeat(6, 1fr); gap:10px; }
+  .adm-kpi { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:14px 16px; }
+  .adm-kpi span { font-size:12px; color:var(--muted); display:block; }
+  .adm-kpi b { font-family:var(--f-display); font-size:22px; display:block; margin-top:4px; }
+  .adm-kpi small { font-size:11.5px; color:var(--muted); }
+  .adm-kpi.alerta b { color:var(--vermelho); }
+  .adm-barra { display:flex; gap:8px; padding:12px 14px; border-bottom:1px solid var(--border); flex-wrap:wrap; align-items:center; }
+  .adm-alertas { display:grid; gap:6px; }
+  .adm-al { display:flex; align-items:center; gap:10px; padding:10px 14px; border-radius:12px; font-size:13px; cursor:pointer;
+    background:color-mix(in srgb, var(--vermelho) 9%, var(--surface)); border:1px solid color-mix(in srgb, var(--vermelho) 25%, transparent); }
+  .adm-al.medio { background:color-mix(in srgb, var(--amarelo) 9%, var(--surface)); border-color:color-mix(in srgb, var(--amarelo) 25%, transparent); }
+  .adm-al b { white-space:nowrap; }
+  #adm-tabela td { vertical-align:middle; }
+  #adm-tabela tr.lin { cursor:pointer; }
+  #adm-tabela tr.lin:hover td { background:var(--surface-2); }
+  .sit { display:inline-flex; align-items:center; gap:6px; font-size:11.5px; font-weight:700; padding:3px 9px; border-radius:20px; white-space:nowrap; }
+  .sit::before { content:""; width:7px; height:7px; border-radius:50%; background:currentColor; }
+  .sit.em_dia { color:var(--verde); background:color-mix(in srgb, var(--verde) 13%, transparent); }
+  .sit.vence { color:var(--amarelo); background:color-mix(in srgb, var(--amarelo) 14%, transparent); }
+  .sit.atrasado, .sit.cancelado { color:var(--vermelho); background:color-mix(in srgb, var(--vermelho) 13%, transparent); }
+  .sit.pausado { color:var(--roxo); background:color-mix(in srgb, var(--roxo) 13%, transparent); }
+  .sit.trial { color:var(--azul); background:color-mix(in srgb, var(--azul) 13%, transparent); }
+  .no-ar { display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--verde); }
+  .no-ar.off { background:var(--vermelho); } .no-ar.nd { background:var(--muted); }
+  .drawer.adm { width:min(640px, 100%); }
+  .adm-tabs { display:flex; gap:4px; padding:10px 18px 0; border-bottom:1px solid var(--border); }
+  .adm-tabs button { border:0; background:none; padding:9px 12px; font-size:13px; font-weight:600; color:var(--muted); border-bottom:2px solid transparent; cursor:pointer; }
+  .adm-tabs button.on { color:var(--text); border-bottom-color:var(--verde); }
+  .adm-corpo { flex:1; overflow:auto; padding:16px 18px 30px; display:flex; flex-direction:column; gap:14px; }
+  .adm-grid { display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; }
+  .adm-grid div { background:var(--surface-2); border:1px solid var(--border); border-radius:10px; padding:10px 12px; }
+  .adm-grid b { display:block; font-family:var(--f-display); font-size:18px; }
+  .adm-grid span { font-size:11.5px; color:var(--muted); }
+  .adm-form { display:grid; grid-template-columns:1fr 1fr; gap:10px 12px; }
+  .adm-form label { display:block; font-size:12px; font-weight:600; margin-bottom:5px; color:var(--muted); }
+  .adm-form input, .adm-form select, .adm-form textarea { width:100%; }
+  .adm-form .inteiro { grid-column:1 / -1; }
+  .adm-sec { border:1px solid var(--border); border-radius:12px; padding:14px; }
+  .adm-sec h4 { margin:0 0 10px; font-size:13.5px; }
+  .adm-user { display:grid; grid-template-columns:1fr auto; gap:6px 10px; padding:11px 0; border-bottom:1px solid var(--border); align-items:center; }
+  .adm-user:last-child { border-bottom:0; }
+  .adm-user .acoes { display:flex; gap:5px; flex-wrap:wrap; justify-content:flex-end; }
+  .senha-st { font-size:11px; font-weight:700; padding:2px 7px; border-radius:6px; }
+  .senha-st.ok { color:var(--verde); background:color-mix(in srgb, var(--verde) 12%, transparent); }
+  .senha-st.trocada { color:var(--amarelo); background:color-mix(in srgb, var(--amarelo) 13%, transparent); }
+  .senha-st.sem { color:var(--muted); background:var(--raise); }
+  .zona-perigo { border:1px solid color-mix(in srgb, var(--vermelho) 35%, transparent); border-radius:12px; padding:14px; }
+  .credencial { font-family:ui-monospace, monospace; background:var(--surface-2); border:1px solid var(--border); border-radius:10px; padding:10px 12px; font-size:14px; display:flex; justify-content:space-between; align-items:center; gap:10px; word-break:break-all; }
+  @media (max-width:1100px){ .adm-kpis { grid-template-columns:repeat(3, 1fr); } }
+  @media (max-width:640px){ .adm-kpis, .adm-grid { grid-template-columns:1fr 1fr; } .adm-form { grid-template-columns:1fr; } }
   #sidebar.recolhido { width:86px; flex-basis:86px; }
   main { padding:20px 24px 40px; flex:1; min-width:0; overflow-y:auto; height:100vh; position:relative; }
   @media (min-width:1900px){ main { padding:24px 36px 40px; } }
@@ -1520,10 +1571,19 @@ VOCÊ: Opa! Aqui é o Matheus..."></textarea>
   </div>
 
   <div id="aba-admin" style="display:none">
-    <div class="cfg-tit"><span class="cfg-mi" style="--c:#e3638f"><span data-ic="escudo" data-ic-tam="21"></span></span><div><h2>Admin</h2><p>Visão do dono: todas as contas</p></div></div>
-    <div class="card tbl-wrap" style="padding:0">
-      <div id="admin-resumo" style="font-size:13px; color:var(--muted); padding:14px 16px 4px"></div>
-      <table id="admin-tabela"></table>
+    <div class="cfg-tit"><span class="cfg-mi" style="--c:#e3638f"><span data-ic="escudo" data-ic-tam="21"></span></span><div style="flex:1"><h2>Admin</h2><p>Todos os seus clientes: cobrança, uso, usuários e senhas</p></div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap"><button class="btn sec" onclick="exportarClientesAdm()"><span data-ic="download" data-ic-tam="15"></span>Exportar</button>
+        <button class="btn" onclick="novoClienteAdm()"><span data-ic="mais" data-ic-tam="15"></span>Novo cliente</button></div></div>
+    <div id="adm-kpis" class="adm-kpis"></div>
+    <div id="adm-alertas"></div>
+    <div class="card" style="padding:0">
+      <div class="adm-barra">
+        <div class="busca-box" style="flex:1; min-width:200px"><span data-ic="busca" data-ic-tam="15"></span><input id="adm-busca" placeholder="Buscar cliente, e-mail ou etiqueta" oninput="renderAdm()"></div>
+        <select id="adm-filtro" onchange="renderAdm()"><option value="">Todas as situações</option><option value="atrasado">Atrasados</option><option value="vence">Vencendo</option><option value="em_dia">Em dia</option><option value="pausado">Disparos pausados</option><option value="trial">Teste grátis</option><option value="alerta">Com alerta</option></select>
+        <select id="adm-ordem" onchange="renderAdm()"><option value="proxima">Próxima cobrança</option><option value="nome">Nome</option><option value="valor">Valor mensal</option><option value="inicio">Mais antigos</option><option value="leads">Mais leads</option><option value="acesso">Último acesso</option></select>
+        <button class="btn sec" onclick="colunasAdm(event)"><span data-ic="colunas" data-ic-tam="15"></span>Colunas</button>
+      </div>
+      <div class="tbl-wrap"><table class="tbl" id="adm-tabela"></table></div>
     </div>
   </div>
 </main>
@@ -6809,19 +6869,324 @@ async function carregarAssinatura() {
 }
 
 // ---- admin (so o interno enxerga) ----
+// ============================================================
+// ADMIN DO DONO: clientes, cobranca, uso, usuarios e senhas (lib/admin.js)
+// ============================================================
+let admDados = null, admAberto = null, admAba = "resumo";
+const COLS_ADM = [["situacao", "Situação"], ["plano", "Plano e valor"], ["inicio", "Cliente desde"], ["proxima", "Próxima cobrança"],
+  ["uso", "Uso (leads, reuniões 30d)"], ["whats", "WhatsApp"], ["acesso", "Último acesso"], ["sistema", "Sistema"], ["contato", "Contato"]];
+const colsAdm = () => { try { return JSON.parse(localStorage.getItem("adm_cols") || "null") || ["situacao", "plano", "inicio", "proxima", "uso", "whats", "acesso", "sistema"]; } catch { return ["situacao", "plano", "proxima", "uso"]; } };
+const brl = (v) => "R$ " + Number(v || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const dataBR = (iso) => iso ? String(iso).slice(0, 10).split("-").reverse().join("/") : "-";
+const quandoRel = (ts) => {
+  if (!ts) return "nunca";
+  const d = Math.floor((Date.now() - new Date(String(ts).replace(" ", "T") + "Z").getTime()) / 86400000);
+  return d <= 0 ? "hoje" : d === 1 ? "ontem" : `há ${d} dias`;
+};
 async function carregarAdmin() {
-  const d = await api("/api/admin/clientes");
-  if (d.erro) return;
+  const d = await api("/api/admin/clientes").catch(() => null);
+  if (!d || d.erro) return;
   const btnAdmin = $("#sub-admin"); if (btnAdmin) btnAdmin.style.display = "";
-  $("#admin-resumo").textContent = `${d.clientes.length} cliente(s) · receita mensal estimada R$ ${d.mrr_estimado}`;
-  $("#admin-tabela").innerHTML = "<tr><th>Cliente</th><th>Email</th><th>Leads</th><th>Disparos</th><th>Respostas</th><th>Reuniões</th><th>Whats</th><th>Status</th><th></th></tr>" +
-    d.clientes.map((c) => `<tr>
-      <td><b>${esc(c.nome)}</b><br><small style="color:var(--muted)"><a href="${esc(c.url)}" target="_blank" style="color:var(--muted)">${esc(c.slug)}</a></small></td>
-      <td style="font-size:12.5px">${esc(c.email)}</td><td>${c.leads}</td><td>${c.disparos}</td><td>${c.respostas}</td><td>${c.reunioes}</td>
-      <td>${c.whats_conectados > 0 ? "" + c.whats_conectados : "0"}</td>
-      <td>${c.erro ? esc(c.erro) : c.pausada ? '<span class="status-c off"><span class="dot"></span>Pausada</span>' : '<span class="status-c on"><span class="dot"></span>Ativa</span>'}</td>
-      <td><button class="btn sec mini" onclick="entrarNaConta('${esc(c.slug)}')" title="Abrir o painel dessa conta">Entrar${ic("seta", 13)}</button></td>
-    </tr>`).join("");
+  admDados = d;
+  if (subCfgAtual !== "admin" && !$("#aba-admin")?.offsetParent) return;
+  renderAdm();
+  if (admAberto) desenharClienteAdm();
+}
+function renderAdm() {
+  const d = admDados; if (!d || !$("#adm-tabela")) return;
+  const r = d.resumo;
+  $("#adm-kpis").innerHTML = [
+    ["Clientes ativos", r.total, `${d.arquivados ? d.arquivados + " cancelado(s) arquivado(s)" : "contas no ar"}`],
+    ["Receita mensal", brl(r.mrr), "soma das mensalidades"],
+    ["Recebido no mês", brl(r.recebido_mes), "pagamentos registrados"],
+    ["A receber em 7 dias", brl(r.a_receber_7), `${r.qtd_7} cobrança(s)`],
+    ["Em atraso", brl(r.valor_atrasado), `${r.atrasados} cliente(s)`, r.atrasados],
+    ["Alertas", r.alertas, `${r.leads} leads · ${r.reunioes30} reuniões 30d`, r.alertas],
+  ].map(([t, v, sub, ruim]) => `<div class="adm-kpi ${ruim ? "alerta" : ""}"><span>${t}</span><b>${v}</b><small>${sub}</small></div>`).join("");
+  const altos = d.clientes.flatMap((c) => c.alertas.filter((a) => a.nivel !== "baixo").map((a) => ({ ...a, c })));
+  $("#adm-alertas").innerHTML = altos.length ? `<div class="adm-alertas">${altos.slice(0, 6).map((a) =>
+    `<div class="adm-al ${a.nivel}" onclick="abrirClienteAdm('${esc(a.c.slug)}')">${ic("alerta", 16)}<b>${esc(a.c.nome)}</b><span>${esc(a.txt)}</span><span style="margin-left:auto">${ic("seta", 14)}</span></div>`).join("")}</div>` : "";
+  const busca = ($("#adm-busca")?.value || "").toLowerCase().trim();
+  const filtro = $("#adm-filtro")?.value || "", ordem = $("#adm-ordem")?.value || "proxima";
+  let lista = d.clientes.filter((c) => c.cadastro.status !== "cancelado");
+  if (busca) lista = lista.filter((c) => [c.nome, c.email, c.slug, c.cadastro.tags, c.cadastro.contato_nome].join(" ").toLowerCase().includes(busca));
+  if (filtro === "alerta") lista = lista.filter((c) => c.alertas.length);
+  else if (filtro) lista = lista.filter((c) => c.situacao.chave === filtro);
+  const ord = {
+    proxima: (a, b) => String(a.cadastro.proxima_cobranca || "9").localeCompare(String(b.cadastro.proxima_cobranca || "9")),
+    nome: (a, b) => a.nome.localeCompare(b.nome), valor: (a, b) => (b.cadastro.valor_mensal || 0) - (a.cadastro.valor_mensal || 0),
+    inicio: (a, b) => String(a.cadastro.inicio_em).localeCompare(String(b.cadastro.inicio_em)), leads: (a, b) => b.metricas.leads - a.metricas.leads,
+    acesso: (a, b) => String(b.metricas.ultimo_acesso || "").localeCompare(String(a.metricas.ultimo_acesso || "")),
+  }[ordem];
+  lista.sort(ord);
+  const cols = colsAdm();
+  const cel = {
+    situacao: (c) => `<span class="sit ${c.situacao.chave}">${esc(c.situacao.rot)}</span>`,
+    plano: (c) => `<b>${brl(c.cadastro.valor_mensal)}</b><div class="muted" style="font-size:11.5px">${esc(c.cadastro.plano || "")}</div>`,
+    inicio: (c) => `${dataBR(c.cadastro.inicio_em)}<div class="muted" style="font-size:11.5px">${tempoDesde(c.cadastro.inicio_em)}</div>`,
+    proxima: (c) => `<b>${dataBR(c.cadastro.proxima_cobranca)}</b><div class="muted" style="font-size:11.5px">${c.situacao.dias !== undefined ? (c.situacao.dias < 0 ? `${-c.situacao.dias}d em atraso` : c.situacao.dias === 0 ? "hoje" : `em ${c.situacao.dias}d`) : ""}</div>`,
+    uso: (c) => `${c.metricas.leads} leads<div class="muted" style="font-size:11.5px">${c.metricas.reunioes30} reuniões · ${c.metricas.disparos7} disparos 7d</div>`,
+    whats: (c) => `${c.metricas.whats_conectados}/${c.whats_limite}<div class="muted" style="font-size:11.5px">${c.metricas.whats_conectados ? "conectado" : "desconectado"}</div>`,
+    acesso: (c) => quandoRel(c.metricas.ultimo_acesso),
+    sistema: (c) => c.container ? `<span class="no-ar ${c.container.estado === "running" ? "" : "off"}" title="${esc(c.container.desc || c.container.estado)}"></span> ${c.container.estado === "running" ? "no ar" : "fora"}` : `<span class="no-ar nd"></span> -`,
+    contato: (c) => c.cadastro.contato_nome ? `${esc(c.cadastro.contato_nome)}<div class="muted" style="font-size:11.5px">${esc(c.cadastro.contato_whats || "")}</div>` : "-",
+  };
+  $("#adm-tabela").innerHTML = `<thead><tr><th>Cliente</th>${COLS_ADM.filter(([k]) => cols.includes(k)).map(([, r]) => `<th>${r}</th>`).join("")}<th></th></tr></thead><tbody>
+    ${lista.map((c) => `<tr class="lin" onclick="abrirClienteAdm('${esc(c.slug)}')">
+      <td><b>${esc(c.nome)}</b>${c.alertas.some((a) => a.nivel === "alto") ? ` <span style="color:var(--vermelho)" title="${esc(c.alertas.map((a) => a.txt).join(" · "))}">${ic("alerta", 13)}</span>` : ""}
+        <div class="muted" style="font-size:11.5px">${esc(c.email)}</div>
+        ${c.cadastro.tags ? `<div style="display:flex; gap:4px; flex-wrap:wrap; margin-top:4px">${c.cadastro.tags.split(",").map((t) => `<span class="tag" style="font-size:10.5px">${esc(t.trim())}</span>`).join("")}</div>` : ""}</td>
+      ${COLS_ADM.filter(([k]) => cols.includes(k)).map(([k]) => `<td>${cel[k](c)}</td>`).join("")}
+      <td style="white-space:nowrap" onclick="event.stopPropagation()"><button class="btn sec mini" onclick="entrarNaConta('${esc(c.slug)}')" title="Abrir o painel desse cliente">Entrar${ic("seta", 13)}</button></td></tr>`).join("")
+    || `<tr><td colspan="12" class="muted" style="padding:24px; text-align:center">Nenhum cliente${busca || filtro ? " com esse filtro" : ""}.</td></tr>`}</tbody>`;
+}
+function tempoDesde(iso) {
+  if (!iso) return "";
+  const meses = Math.floor((Date.now() - new Date(iso + "T12:00:00Z").getTime()) / (30.44 * 86400000));
+  return meses < 1 ? "este mês" : meses === 1 ? "1 mês" : meses < 12 ? `${meses} meses` : `${Math.floor(meses / 12)} ano(s) e ${meses % 12} mes(es)`;
+}
+function colunasAdm(ev) {
+  const cols = colsAdm();
+  abrirMenuCtx(ev, [{ titulo: "Colunas visíveis" }, ...COLS_ADM.map(([k, r]) => ({ icone: cols.includes(k) ? "checkq" : "menos", rot: r, on: cols.includes(k),
+    acao: () => { const n = cols.includes(k) ? cols.filter((x) => x !== k) : [...cols, k]; localStorage.setItem("adm_cols", JSON.stringify(n)); renderAdm(); } }))]);
+}
+function exportarClientesAdm() {
+  fetch(API + "/api/admin/clientes.csv", { headers: { Authorization: "Bearer " + SENHA } }).then((r) => r.blob()).then((b) => {
+    const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = `clientes-prospecta-${hojeISO()}.csv`; a.click();
+  });
+}
+
+// ---- detalhe do cliente (painel lateral) ----
+async function abrirClienteAdm(slug, aba) {
+  admAberto = { slug, dados: null }; admAba = aba || admAba || "resumo";
+  document.querySelector(".drawer")?.remove();
+  const d = document.createElement("aside");
+  d.className = "drawer adm"; d.id = "drawer-adm";
+  d.innerHTML = `<div class="drawer-h">${ic("predio", 18)}<b>Carregando...</b><button class="btn ghost mini icone" onclick="fecharClienteAdm()">${ic("x", 16)}</button></div>`;
+  document.body.appendChild(d);
+  await desenharClienteAdm();
+}
+function fecharClienteAdm() { $("#drawer-adm")?.remove(); admAberto = null; }
+async function desenharClienteAdm() {
+  const dr = $("#drawer-adm"); if (!dr || !admAberto) return;
+  const c = await api(`/api/admin/cliente/${encodeURIComponent(admAberto.slug)}`);
+  if (c.erro) { dr.innerHTML = `<div class="drawer-h"><b>${esc(c.erro)}</b><button class="btn ghost mini icone" onclick="fecharClienteAdm()">${ic("x", 16)}</button></div>`; return; }
+  admAberto.dados = c;
+  const abas = [["resumo", "Resumo"], ["cobranca", "Cobrança"], ["usuarios", "Usuários e senhas"], ["historico", "Histórico"]];
+  dr.innerHTML = `<div class="drawer-h">${ic("predio", 18)}<b>${esc(c.nome)}</b><span class="sit ${c.situacao.chave}">${esc(c.situacao.rot)}</span>
+      <button class="btn ghost mini icone" onclick="fecharClienteAdm()" title="Fechar">${ic("x", 16)}</button></div>
+    <div class="adm-tabs">${abas.map(([k, r]) => `<button class="${admAba === k ? "on" : ""}" onclick="admAba='${k}'; desenharClienteAdm()">${r}</button>`).join("")}</div>
+    <div class="adm-corpo">${{ resumo: admResumo, cobranca: admCobranca, usuarios: admUsuarios, historico: admHistorico }[admAba](c)}</div>`;
+}
+function admResumo(c) {
+  const m = c.metricas;
+  return `
+    ${c.alertas.length ? `<div class="adm-alertas">${c.alertas.map((a) => `<div class="adm-al ${a.nivel}" style="cursor:default">${ic("alerta", 15)}<span>${esc(a.txt)}</span></div>`).join("")}</div>` : ""}
+    <div class="adm-grid">
+      <div><b>${m.leads}</b><span>leads</span></div><div><b>${m.disparos7}</b><span>disparos em 7 dias</span></div><div><b>${m.respostas7}</b><span>respostas em 7 dias</span></div>
+      <div><b>${m.reunioes30}</b><span>reuniões em 30 dias</span></div><div><b>${m.reunioes}</b><span>reuniões no total</span></div><div><b>${m.whats_conectados}/${c.whats_limite}</b><span>WhatsApps conectados</span></div>
+      <div><b>${m.usuarios}</b><span>usuários ativos</span></div><div><b style="font-size:14px">${quandoRel(m.ultimo_acesso)}</b><span>último acesso</span></div><div><b style="font-size:14px">${quandoRel(m.ultima_atividade)}</b><span>última atividade</span></div>
+    </div>
+    <div class="adm-sec"><h4>Conta</h4>
+      <div class="pf-dados" style="gap:8px">
+        <div><span>Identificador</span><b>${esc(c.slug)}</b></div>
+        <div><span>E-mail de acesso</span><b>${esc(c.email || "-")}</b></div>
+        <div><span>Cliente desde</span><b>${dataBR(c.cadastro.inicio_em)} (${tempoDesde(c.cadastro.inicio_em)})</b></div>
+        <div><span>Próxima cobrança</span><b>${dataBR(c.cadastro.proxima_cobranca)} · ${brl(c.cadastro.valor_mensal)}</b></div>
+        <div><span>Endereço da API</span><b style="font-size:12px">${esc(c.url || "-")}</b></div>
+        <div><span>Sistema</span><b>${c.container ? (c.container.estado === "running" ? "no ar" : "fora do ar") + ` <span class="muted" style="font-weight:400">(${esc(c.container.desc || c.container.estado)})</span>` : "não verificado"}</b></div>
+        <div><span>IA</span><b style="${m.ia_sem_saldo ? "color:var(--vermelho)" : ""}">${m.ia_sem_saldo ? "sem saldo na Anthropic" : "ok"}</b></div>
+      </div></div>
+    <div style="display:flex; gap:8px; flex-wrap:wrap">
+      <button class="btn" onclick="entrarNaConta('${esc(c.slug)}')">${ic("seta", 15)}Entrar na conta</button>
+      <button class="btn sec" onclick="pausarClienteAdm(${m.pausada ? "false" : "true"})">${ic(m.pausada ? "play" : "power", 15)}${m.pausada ? "Retomar disparos" : "Pausar disparos"}</button>
+      ${c.cadastro.contato_whats ? `<a class="btn wa" target="_blank" rel="noopener" href="https://wa.me/${esc(String(c.cadastro.contato_whats).replace(/\D/g, ""))}">${ic("whatsapp", 15)}Falar com o cliente</a>` : ""}
+    </div>
+    <div class="zona-perigo"><h4 style="margin:0 0 6px; color:var(--vermelho)">Cancelar cliente</h4>
+      <p class="muted" style="font-size:12.5px; margin:0 0 10px">Tira o sistema do ar e arquiva os dados no servidor (nada é apagado). O cliente perde o acesso na hora.</p>
+      <button class="btn sec" style="color:var(--vermelho)" onclick="cancelarClienteAdm()">${ic("lixeira", 15)}Cancelar este cliente</button></div>`;
+}
+function admCobranca(c) {
+  const k = c.cadastro;
+  return `
+    <div class="adm-sec"><h4>Registrar pagamento</h4>
+      <div class="adm-form">
+        <div><label>Valor</label><input id="pg-valor" type="number" step="0.01" min="0" value="${Number(k.valor_mensal || 0)}"></div>
+        <div><label>Pago em</label><input id="pg-data" type="date" value="${hojeISO()}"></div>
+        <div><label>Forma</label><select id="pg-forma"><option>Pix</option><option>Cartão</option><option>Boleto</option><option>Transferência</option><option>Dinheiro</option><option>Outro</option></select></div>
+        <div><label>Observação</label><input id="pg-obs" placeholder="opcional"></div>
+      </div>
+      <p class="muted" style="font-size:12px; margin:8px 0 10px">Referente ao vencimento de ${dataBR(k.proxima_cobranca)}. A próxima cobrança passa para o mês seguinte e, se os disparos estavam pausados, eles voltam.</p>
+      <button class="btn" onclick="registrarPagamentoAdm()">${ic("dinheiro", 15)}Registrar pagamento</button></div>
+    <div class="adm-sec"><h4>Plano e vencimento</h4>
+      <div class="adm-form">
+        <div><label>Plano</label><input id="ad-plano" value="${esc(k.plano || "")}" placeholder="Ex.: Prospecta Pro"></div>
+        <div><label>Valor mensal (R$)</label><input id="ad-valor" type="number" step="0.01" min="0" value="${Number(k.valor_mensal || 0)}"></div>
+        <div><label>Dia do vencimento</label><input id="ad-dia" type="number" min="1" max="31" value="${Number(k.dia_vencimento || 1)}"></div>
+        <div><label>Próxima cobrança</label><input id="ad-prox" type="date" value="${esc(k.proxima_cobranca || "")}"></div>
+        <div><label>Cliente desde</label><input id="ad-inicio" type="date" value="${esc(k.inicio_em || "")}"></div>
+        <div><label>Situação</label><select id="ad-status"><option value="ativo" ${k.status === "ativo" ? "selected" : ""}>Ativo (pagante)</option><option value="trial" ${k.status === "trial" ? "selected" : ""}>Teste grátis</option></select></div>
+        <div><label>Contato (nome)</label><input id="ad-cnome" value="${esc(k.contato_nome || "")}"></div>
+        <div><label>WhatsApp do contato</label><input id="ad-cwhats" value="${esc(k.contato_whats || "")}" placeholder="5547999999999"></div>
+        <div class="inteiro"><label>Etiquetas (separadas por vírgula)</label><input id="ad-tags" value="${esc(k.tags || "")}" placeholder="Ex.: clínicas, VIP, indicação"></div>
+        <div class="inteiro"><label>Observações internas</label><textarea id="ad-obs" rows="4" placeholder="Combinados, desconto, quem indicou...">${esc(k.observacoes || "")}</textarea></div>
+      </div>
+      <button class="btn" style="margin-top:12px" onclick="salvarCadastroAdm()">${ic("checkq", 15)}Salvar</button></div>
+    <div class="adm-sec"><h4>Pagamentos</h4>
+      ${c.cobrancas.length ? `<table class="tbl"><thead><tr><th>Pago em</th><th>Valor</th><th>Referente</th><th>Forma</th><th></th></tr></thead><tbody>
+        ${c.cobrancas.map((p) => `<tr><td>${dataBR(p.pago_em)}</td><td><b>${brl(p.valor)}</b></td><td>${dataBR(p.referente)}</td><td class="muted">${esc(p.forma || "-")}${p.obs ? ` · ${esc(p.obs)}` : ""}</td>
+          <td><button class="btn ghost mini icone" title="Apagar este pagamento" onclick="apagarPagamentoAdm(${Number(p.id)})">${ic("lixeira", 13)}</button></td></tr>`).join("")}</tbody></table>
+        <p class="muted" style="font-size:12px; margin:8px 0 0">Total recebido: <b>${brl(c.cobrancas.reduce((s, p) => s + Number(p.valor || 0), 0))}</b></p>`
+      : `<p class="muted" style="font-size:13px; margin:0">Nenhum pagamento registrado ainda.</p>`}</div>`;
+}
+const PAPEIS_ADM = [["admin", "Administrador"], ["gestor", "Gestor"], ["operador", "Operador"], ["sdr", "SDR"], ["closer", "Closer"], ["leitor", "Leitor"]];
+function selo(st) {
+  return { ok: `<span class="senha-st ok">senha no cofre</span>`, trocada: `<span class="senha-st trocada" title="O cliente trocou a senha depois que você definiu. Redefina para ver de novo.">trocada pelo cliente</span>`,
+    sem: `<span class="senha-st sem" title="Essa senha não foi criada pelo Admin, então não existe em lugar nenhum. Redefina para ter uma que você possa ver.">não definida aqui</span>` }[st] || "";
+}
+function admUsuarios(c) {
+  const botoesSenha = (alvo, st) => `${st === "ok" ? `<button class="btn sec mini" onclick="verSenhaAdm('${alvo}')">${ic("olho", 13)}Ver senha</button>` : ""}
+    <button class="btn sec mini" onclick="redefinirSenhaAdm('${alvo}')">${ic("chave", 13)}Redefinir</button>`;
+  return `
+    <div class="nota-box" style="font-size:12.5px">${ic("escudo", 14)} As senhas que você define aqui ficam guardadas criptografadas e você pode ver de novo, confirmando a sua senha. A senha que o cliente criou ou trocou sozinho não fica guardada em lugar nenhum (só uma impressão digital dela), por isso não dá para mostrar: redefina para ter uma visível.</div>
+    <div class="adm-sec"><h4>Acesso principal (dono da conta)</h4>
+      <div class="adm-user"><div><b>${esc(c.dono.email || "-")}</b><div style="margin-top:4px">${selo(c.dono.senha)}</div></div>
+        <div class="acoes">${botoesSenha("dono", c.dono.senha)}</div></div></div>
+    <div class="adm-sec"><h4>Usuários da equipe do cliente (${c.usuarios.filter((u) => u.ativo).length} ativos)</h4>
+      ${c.usuarios.filter((u) => !String(u.email).startsWith("removido-")).map((u) => `<div class="adm-user" style="${u.ativo ? "" : "opacity:.55"}">
+        <div><b>${esc(u.nome)}</b> <span class="muted" style="font-size:12px">${esc(u.email)}</span>
+          <div style="display:flex; gap:6px; align-items:center; margin-top:5px; flex-wrap:wrap">
+            <select style="font-size:12px; padding:3px 24px 3px 8px" onchange="editarUsuarioAdm(${Number(u.id)}, { papel: this.value })">${PAPEIS_ADM.map(([k, r]) => `<option value="${k}" ${u.papel === k ? "selected" : ""}>${r}</option>`).join("")}</select>
+            ${selo(u.senha)}<span class="muted" style="font-size:11.5px">acesso ${quandoRel(u.ultimo_acesso)}</span>${u.ativo ? "" : `<span class="senha-st sem">desativado</span>`}</div></div>
+        <div class="acoes">${botoesSenha("u" + u.id, u.senha)}
+          <button class="btn ghost mini" onclick="editarUsuarioAdm(${Number(u.id)}, { ativo: ${u.ativo ? "false" : "true"} })">${u.ativo ? "Desativar" : "Reativar"}</button>
+          <button class="btn ghost mini icone" style="color:var(--vermelho)" title="Remover usuário" onclick="removerUsuarioAdm(${Number(u.id)}, '${esc(String(u.email).replace(/'/g, ""))}')">${ic("lixeira", 13)}</button></div></div>`).join("")
+        || `<p class="muted" style="font-size:13px; margin:0">Esse cliente só usa o acesso principal.</p>`}</div>
+    <div class="adm-sec"><h4>Criar usuário nesse cliente</h4>
+      <div class="adm-form">
+        <div><label>Nome</label><input id="nu-nome"></div>
+        <div><label>E-mail</label><input id="nu-email" type="email"></div>
+        <div><label>Papel</label><select id="nu-papel">${PAPEIS_ADM.map(([k, r]) => `<option value="${k}" ${k === "operador" ? "selected" : ""}>${r}</option>`).join("")}</select></div>
+        <div><label>Senha <span style="font-weight:400">(vazio = gera uma)</span></label><input id="nu-senha" placeholder="mínimo 6 caracteres"></div>
+      </div>
+      <button class="btn" style="margin-top:12px" onclick="criarUsuarioAdm()">${ic("mais", 15)}Criar usuário</button></div>`;
+}
+function admHistorico(c) {
+  return `<div class="adm-sec"><h4>O que foi feito nessa conta pelo Admin</h4>
+    ${c.historico.length ? c.historico.map((h) => `<div style="display:flex; gap:10px; padding:8px 0; border-bottom:1px solid var(--border); font-size:13px">
+      <span class="muted" style="white-space:nowrap">${esc(dataHoraSP(h.criado_em))}</span><span>${esc(String(h.detalhe).split(" · ").filter((_, i) => i !== 1).join(" · "))}</span></div>`).join("")
+    : `<p class="muted" style="font-size:13px; margin:0">Nada registrado ainda.</p>`}</div>`;
+}
+
+// ---- acoes ----
+const slugAdm = () => encodeURIComponent(admAberto?.slug || "");
+async function acaoAdm(promessa, okMsg) {
+  const r = await promessa;
+  if (!r || r.erro) { toast(r?.erro || "não deu certo", "alerta"); return null; }
+  if (okMsg) toast(okMsg, "checkq");
+  await desenharClienteAdm(); carregarAdmin();
+  return r;
+}
+function salvarCadastroAdm() {
+  const corpo = { plano: $("#ad-plano").value, valor_mensal: $("#ad-valor").value, dia_vencimento: $("#ad-dia").value, proxima_cobranca: $("#ad-prox").value,
+    inicio_em: $("#ad-inicio").value, status: $("#ad-status").value, contato_nome: $("#ad-cnome").value, contato_whats: $("#ad-cwhats").value,
+    tags: $("#ad-tags").value, observacoes: $("#ad-obs").value };
+  acaoAdm(api(`/api/admin/cliente/${slugAdm()}`, { method: "PATCH", body: JSON.stringify(corpo) }), "Cadastro salvo");
+}
+function registrarPagamentoAdm() {
+  const corpo = { valor: $("#pg-valor").value, pago_em: $("#pg-data").value, forma: $("#pg-forma").value, obs: $("#pg-obs").value };
+  acaoAdm(api(`/api/admin/cliente/${slugAdm()}/pagamento`, { method: "POST", body: JSON.stringify(corpo) }), "Pagamento registrado")
+    .then((r) => { if (r?.retomou) toast("Os disparos desse cliente voltaram", "play"); });
+}
+function apagarPagamentoAdm(id) {
+  if (!confirm("Apagar esse pagamento? O vencimento volta para a data a que ele se referia.")) return;
+  acaoAdm(api(`/api/admin/cliente/${slugAdm()}/pagamento/${Number(id)}`, { method: "DELETE" }), "Pagamento apagado");
+}
+function pausarClienteAdm(pausar) {
+  if (!confirm(pausar ? "Pausar os disparos desse cliente? O painel continua acessível e a IA segue respondendo quem já está em conversa." : "Retomar os disparos desse cliente?")) return;
+  acaoAdm(api(`/api/admin/cliente/${slugAdm()}/pausar`, { method: "POST", body: JSON.stringify({ pausar }) }), pausar ? "Disparos pausados" : "Disparos retomados");
+}
+function editarUsuarioAdm(id, campos) {
+  acaoAdm(api(`/api/admin/cliente/${slugAdm()}/usuarios/${Number(id)}`, { method: "PATCH", body: JSON.stringify(campos) }), "Usuário atualizado");
+}
+async function removerUsuarioAdm(id, email) {
+  const r = await comSenha((senha) => api(`/api/admin/cliente/${slugAdm()}/usuarios/${Number(id)}`, { method: "DELETE", body: JSON.stringify(senha ? { senha_admin: senha } : {}) }),
+    "Remover usuário", `O usuário <b>${esc(email)}</b> perde o acesso a essa conta na hora. As notas e tarefas dele continuam no sistema.`);
+  if (!r) return;
+  if (r.erro) return toast(r.erro, "alerta");
+  toast("Usuário removido", "checkq"); desenharClienteAdm();
+}
+async function criarUsuarioAdm() {
+  const corpo = { nome: $("#nu-nome").value, email: $("#nu-email").value, papel: $("#nu-papel").value, senha: $("#nu-senha").value };
+  const r = await acaoAdm(api(`/api/admin/cliente/${slugAdm()}/usuarios`, { method: "POST", body: JSON.stringify(corpo) }), "Usuário criado");
+  if (r?.senha) mostrarCredencial("Usuário criado", corpo.email, r.senha, admAberto?.dados?.url);
+}
+async function redefinirSenhaAdm(alvo) {
+  const nova = prompt("Nova senha (mínimo 6 caracteres). Deixe vazio para gerar uma automaticamente:", "");
+  if (nova === null) return;
+  const r = await acaoAdm(api(`/api/admin/cliente/${slugAdm()}/senha`, { method: "POST", body: JSON.stringify({ alvo, nova }) }), "Senha redefinida");
+  if (r?.senha) mostrarCredencial("Senha redefinida", r.email, r.senha, admAberto?.dados?.url);
+}
+async function verSenhaAdm(alvo) {
+  const r = await comSenha((senha) => api(`/api/admin/cliente/${slugAdm()}/ver-senha`, { method: "POST", body: JSON.stringify({ alvo, ...(senha ? { senha_admin: senha } : {}) }) }),
+    "Ver senha do cliente", "Por segurança, confirme a sua senha. Fica registrado no histórico que você viu essa senha.");
+  if (!r) return;
+  if (r.erro) return toast(r.erro, "alerta");
+  mostrarCredencial("Senha de acesso", r.email, r.senha, admAberto?.dados?.url);
+  desenharClienteAdm();
+}
+function mostrarCredencial(titulo, email, senha, url) {
+  // cada cliente abre o painel no proprio endereco (o container serve o painel)
+  const msg = `Acesso ao Prospecta\nPainel: ${url || location.origin}\nE-mail: ${email}\nSenha: ${senha}`;
+  window.__msgCred = msg;
+  modal(esc(titulo), `<div style="display:grid; gap:10px">
+    <div><label class="muted" style="font-size:12px">E-mail</label><div class="credencial"><span>${esc(email || "")}</span></div></div>
+    <div><label class="muted" style="font-size:12px">Senha</label><div class="credencial"><span id="cred-senha">${esc(senha)}</span>
+      <button class="btn sec mini" onclick="navigator.clipboard.writeText(document.getElementById('cred-senha').textContent); toast('Senha copiada', 'copiar')">${ic("copiar", 13)}Copiar</button></div></div>
+    <button class="btn" onclick="navigator.clipboard.writeText(window.__msgCred); toast('Mensagem copiada: é só colar no WhatsApp do cliente', 'copiar')">${ic("whatsapp", 15)}Copiar mensagem pronta para o cliente</button>
+  </div>`, 440);
+}
+async function cancelarClienteAdm() {
+  const c = admAberto?.dados; if (!c) return;
+  const conf = prompt(`Isso tira ${c.nome} do ar. Para confirmar, digite o identificador: ${c.slug}`);
+  if (conf === null) return;
+  if (conf.trim() !== c.slug) return toast("Identificador não confere. Nada foi feito.", "alerta");
+  const r = await comSenha((senha) => api(`/api/admin/cliente/${slugAdm()}/cancelar`, { method: "POST", body: JSON.stringify({ confirmar: conf.trim(), ...(senha ? { senha_admin: senha } : {}) }) }),
+    "Cancelar cliente", `<b>${esc(c.nome)}</b> sai do ar agora. Os dados ficam arquivados no servidor e podem ser restaurados pelo terminal.`);
+  if (!r) return;
+  if (r.erro) return toast(r.erro, "alerta");
+  toast("Cliente cancelado e arquivado", "checkq");
+  fecharClienteAdm(); carregarAdmin();
+}
+
+// ---- novo cliente ----
+function novoClienteAdm() {
+  modal("Novo cliente", `<div class="adm-form">
+      <div class="inteiro"><label>Nome do cliente</label><input id="nc-nome" placeholder="Ex.: Clínica Sorriso" oninput="const s=$('#nc-slug'); if(!s.dataset.mexeu) s.value=this.value.normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,30)"></div>
+      <div><label>Identificador</label><input id="nc-slug" placeholder="clinica-sorriso" oninput="this.dataset.mexeu=1"></div>
+      <div><label>E-mail de acesso</label><input id="nc-email" type="email"></div>
+      <div><label>Senha <span style="font-weight:400">(vazio = gera)</span></label><input id="nc-senha"></div>
+      <div><label>Números de WhatsApp</label><input id="nc-whats" type="number" min="1" max="20" value="1" oninput="$('#nc-valor').value = 100 + Math.max(0, (Number(this.value)||1) - 1) * 20"></div>
+      <div class="inteiro"><label>Chave da IA do cliente (Anthropic)</label><input id="nc-chave" placeholder="sk-ant-..."></div>
+      <div><label>Valor mensal (R$)</label><input id="nc-valor" type="number" step="0.01" value="100"></div>
+      <div><label>Dia do vencimento</label><input id="nc-dia" type="number" min="1" max="31" value="${new Date().getDate()}"></div>
+      <div><label>Contato (nome)</label><input id="nc-cnome"></div>
+      <div><label>WhatsApp do contato</label><input id="nc-cwhats" placeholder="5547999999999"></div>
+      <label class="inteiro" style="display:flex; align-items:center; gap:8px; font-size:13px; color:var(--text); cursor:pointer"><input type="checkbox" id="nc-trial" style="width:auto"> Começa em teste grátis (não entra na receita mensal)</label>
+    </div>
+    <p class="muted" style="font-size:12px; margin:12px 0">Cria o sistema do cliente no servidor (leva até 1 minuto) e já deixa a cobrança configurada.</p>
+    <button class="btn" style="width:100%" id="nc-btn" onclick="criarClienteAdm()">${ic("mais", 15)}Criar cliente</button>`, 560);
+}
+async function criarClienteAdm() {
+  const corpo = { nome: $("#nc-nome").value, slug: $("#nc-slug").value, email: $("#nc-email").value, senha: $("#nc-senha").value, whats: $("#nc-whats").value,
+    chave_ia: $("#nc-chave").value, valor_mensal: $("#nc-valor").value, dia_vencimento: $("#nc-dia").value, contato_nome: $("#nc-cnome").value,
+    contato_whats: $("#nc-cwhats").value, trial: $("#nc-trial").checked };
+  const r = await comSenha((senha) => { toast("Criando o sistema do cliente...", "foguete"); return api("/api/admin/clientes", { method: "POST", body: JSON.stringify({ ...corpo, ...(senha ? { senha_admin: senha } : {}) }) }); },
+    "Criar cliente", `Vai criar o sistema de <b>${esc(corpo.nome || corpo.slug)}</b> no servidor.`);
+  if (!r) return;
+  if (r.erro) return toast(r.erro, "alerta");
+  await carregarAdmin();
+  mostrarCredencial(`${corpo.nome || r.slug} está no ar`, r.email, r.senha, r.url);
 }
 
 // ---- ENTRAR NA CONTA de um cliente (suporte): troca a sessao do painel pela
